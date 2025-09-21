@@ -83,7 +83,23 @@ It predicts a *team score* based on the combined stats of 5 players.
 
 ## Features & Data Handling
 - **Position & scoring one-hot encoding**  
-  - Ensures roles like PG/SG/SF/PF/C and play styles are represented numerically.  
+Each player in basketball is assigned a **position** that defines their role on the court. These are encoded numerically for the MLP:
+- **PG – Point Guard**
+  - Primary ball handler and playmaker.
+  - Focused on assists, controlling the offense, and perimeter shooting.
+- **SG – Shooting Guard**
+  - Scoring-focused player, especially from mid-range or 3-point shots.
+  - Often assists in defense and secondary playmaking.
+- **SF – Small Forward**
+  - Versatile scorer and defender.
+  - Balances outside shooting, driving to the basket, and rebounding.
+- **PF – Power Forward**
+  - Strong inside player, mixes scoring and rebounding.
+  - Often plays physically near the paint (post).
+- **C – Center**
+  - Tallest players, focus on rebounds, shot-blocking, and interior defense.
+  - Anchors the team in the paint and contributes high-efficiency scoring close to the basket.
+In the code, these positions are **one-hot encoded** so the model can understand each player’s role without assuming any ordinal relationship between positions.
 - **Dropped `Unnamed` column**  
   - Removes CSV auto-generated index column issues.  
 - **`encode_player` + `create_team_vector`**  
@@ -96,7 +112,7 @@ It predicts a *team score* based on the combined stats of 5 players.
 ##  UI Flow / Streamlit Improvements
 - **Step 1: Upload CSV** → Cleaned and preprocessed automatically.  
 - **Step 2: Choose seasons** → Define the pool of players.  
-- **Step 3: Train Model** → Button added so training isn’t automatic.  
+- **Step 3: Train Model**
 - **Step 4: Reveal Optimal Team** → Shows 5 best players predicted by MLP.  
 - **Step 5: Analyze Team**
   - *Reveal Positions & Stats* → Shows player positions + stats.  
