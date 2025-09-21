@@ -1,99 +1,118 @@
-# 🏀 ANN NBA Team Optimizer
+# 🏀 Optimal Basketball Team Selector with Deep MLP
 
-This project builds and analyzes NBA teams using an Artificial Neural Network (ANN) with PyTorch + Streamlit.  
-Upload your player dataset, train the model, and reveal your optimal 5-player lineup with analysis.
+This project uses **Artificial Neural Networks (ANN)** and **Streamlit** to build an interactive tool that selects an optimal 5-player basketball team based on player stats.
 
 ---
 
 ## Code Structure & Organization
 
-- **`preprocess.py`**  
-  - Cleans raw CSV data.  
-  - Drops auto-generated `Unnamed` index column.  
-  - Converts categorical features to numeric form.  
+- **`preprocess.py`**
+  - Handles dataset cleaning and transformation.
+  - Drops unwanted columns like `Unnamed`.
+  - Converts categorical features (e.g., draft year, season) into numeric form.
+  - Computes derived features like `experience`.
 
-- **`team_features.py`**  
-  - Defines **position** and **scoring type** one-hot encodings.  
-  - `encode_player()` → translates individual player stats into numeric features.  
-  - `create_team_vector()` → concatenates 5 players into one team vector.  
+- **`team_features.py`**
+  - Defines how individual players are encoded into numeric feature vectors.
+  - Position and scoring type are **one-hot encoded**.
+  - Creates team vectors by concatenating 5 player vectors.
+  - Ensures consistent input format for the MLP.
 
-- **`mlp_model.py`**  
-  - Defines the `DeepMLP` class (multi-layer perceptron).  
-  - Input: encoded team vector.  
-  - Hidden layers with ReLU activations (128 → 64 → 32).  
-  - Output: predicted **team score**.  
-  - Includes training loop with MSE loss + Adam optimizer.  
+- **`MLP.py`**
+  - Defines the **Deep Multi-Layer Perceptron (MLP)** model.
+  - Handles model training, loss calculation, and optimizer setup.
+  - Selects the optimal team by simulating thousands of random lineups.
 
-- **`team_analysis.py`**  
-  - `analyze_team()` → computes per-player and team metrics (offense score, total impact, etc.).  
-  - `print_team_analysis()` → console/terminal output (keeps logic separate from UI).  
+- **`team_analysis.py`**
+  - Provides reusable functions to analyze an optimal team.
+  - Calculates stats like offense score, total impact, and experience.
+  - Assigns each player a position (PG, SG, SF, PF, C).
+  - Keeps analysis logic independent of UI (no Streamlit inside).
 
-- **`main.py`**  
-  - Streamlit app for user interaction.  
-  - Step-by-step workflow: Upload → Preprocess → Train Model → Reveal Team → Analyze.  
-  - UI-only logic: buttons, headers, session state.  
+- **`visualization.py`**
+  - Generates charts for player skill contributions and position distribution.
+  - Used by the Streamlit app to visually explain team choices.
 
----
-
-##  Features & Data Handling
-
-- **Position & scoring encodings**  
-  - Positions: `PG, SG, SF, PF, C`  
-  - Scoring style: `Shooter, Slasher, All-Around`  
-  - Encoded numerically so the ANN can process them.  
-
-- **Optimal team position assignment**  
-  - Selected team is mapped explicitly to 5 roles.  
-  - Ensures lineup balance.  
-
-- **Proxy team score for training**  
-  - Combines key stats (PTS + AST + REB + NET + TS%).  
-  - Used as supervised label for ANN training (since real outcomes aren’t available).  
+- **`main.py`**
+  - Streamlit app for user interaction.
+  - Handles file upload, parameter selection, training, team selection, and analysis.
+  - Uses `st.session_state` to enforce step-by-step flow.
 
 ---
 
-## UI Flow / Streamlit
+## The Deep MLP Model
 
-1. Upload CSV with player stats.  
-2. Preprocess data (auto).  
-3. **Click “Train Model”** → trains ANN on random 5-player teams.  
-4. Reveal the predicted **optimal team**.  
-5. Analyze lineup:  
-   - **Reveal Positions & Stats** → shows assigned roles + raw stats.  
-   - **Player Skill Analysis** → sorts by *Total Impact* and highlights contribution.  
+The core of this project is a **Deep Multi-Layer Perceptron (MLP)** implemented in PyTorch.  
+It predicts a *team score* based on the combined stats of 5 players.
+
+### Architecture
+- **Input layer** → takes a team feature vector (all 5 players concatenated).  
+- **Hidden Layer 1 (128 neurons, ReLU)** → learns broad interactions between player features.  
+- **Hidden Layer 2 (64 neurons, ReLU)** → refines higher-level patterns.  
+- **Hidden Layer 3 (32 neurons, ReLU)** → narrows down to strongest signals.  
+- **Output Layer (1 neuron)** → predicts a single numeric *team score*.  
+
+### Training
+- **Dataset generation**:  
+  - Random 5-player teams are sampled from the pool.  
+  - Each team gets a **proxy score** = `PTS + AST + REB + NET + TS%` (sum of key stats).  
+  - These pairs (team vector, proxy score) form the training dataset.  
+
+- **Loss function**:  
+  - **Mean Squared Error (MSE)** between the predicted score and proxy score.  
+  - Guides the model to minimize the gap between its predictions and stat-based “ground truth.”  
+
+- **Optimizer**:  
+  - **Adam** optimizer adapts learning rate for efficient weight updates.  
+
+- **Epochs**:  
+  - One epoch = training over all sampled teams once.  
+  - More epochs → more chances to adjust weights and reduce error.  
+
+### Why ReLU?
+- **ReLU (Rectified Linear Unit)** introduces non-linearity.  
+- Ensures the model can learn complex patterns, not just straight-line (linear) relationships.  
+- Also reduces vanishing gradient problems common in deep nets.  
+
+### Team Selection
+1. After training, the model evaluates thousands of random trial teams.  
+2. Each trial team is scored by the MLP.  
+3. The team with the **highest predicted score** is chosen as the **optimal lineup**.  
+
+---
+
+## Features & Data Handling
+- **Position & scoring one-hot encoding**  
+  - Ensures roles like PG/SG/SF/PF/C and play styles are represented numerically.  
+- **Dropped `Unnamed` column**  
+  - Removes CSV auto-generated index column issues.  
+- **`encode_player` + `create_team_vector`**  
+  - Standardized way to convert player/team into numeric arrays.  
+- **Mapped optimal team to positions**  
+  - Each player explicitly assigned a role in the final team.
 
 ---
 
-## Machine Learning & Training
-
-- **Training samples**  
-  - Thousands of random 5-player teams are generated.  
-  - Each team → feature vector + proxy score.  
-  - Provides supervised training dataset.  
-
-- **Trials for optimal team**  
-  - After training, thousands of trial teams are evaluated.  
-  - Model predicts scores, and the highest-scoring team is chosen.  
-
-- **Epochs & Loss**  
-  - **Epoch** = one full pass through training samples.  
-  - **Loss** = Mean Squared Error (MSE) between predicted score and proxy score.  
-  - ANN learns to approximate the scoring function, refining weights each epoch.  
+##  UI Flow / Streamlit Improvements
+- **Step 1: Upload CSV** → Cleaned and preprocessed automatically.  
+- **Step 2: Choose seasons** → Define the pool of players.  
+- **Step 3: Train Model** → Button added so training isn’t automatic.  
+- **Step 4: Reveal Optimal Team** → Shows 5 best players predicted by MLP.  
+- **Step 5: Analyze Team**
+  - *Reveal Positions & Stats* → Shows player positions + stats.  
+  - *Player Skill Analysis* → Ranks players by **Total Impact** and visualizes contributions.  
 
 ---
 
-##  Example Output
-
-- **Optimal Team Prediction** → best 5-player lineup with highest predicted score.  
-- **Analysis** → sorted table of contributions (`Total Impact` = offense + assists + rebounds + defense).  
-
----
-
-## 🔹 Why This Structure?
-
-✅ Separation of concerns → modular, testable, clean.  
-✅ ANN model isolated from UI → can be tested or swapped easily.  
-✅ Reusable preprocessing & analysis functions.  
-✅ Step-based UI → logical user flow without clutter.  
+## Key Concepts
+- **Training Samples** → Number of random teams generated to train the model.  
+- **Trials** → Number of random teams evaluated after training to find the best one.  
+- **Total Impact** → A derived metric combining offense, assists, rebounds, defense.  
+  - Helps identify which player contributes most overall.  
 
 ---
+
+## How to Run
+```bash
+pip install -r requirements.txt
+streamlit run main.py
