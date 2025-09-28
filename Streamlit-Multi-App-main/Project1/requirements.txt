@@ -1,0 +1,10 @@
+streamlit
+pandas
+scikit-learn
+seaborn
+openpyxl
+xlrd
+numpy
+matplotlib
+git+https://github.com/Thinguyen10/my_utils_deeplearning.git@v0.1.0#egg=my_utils_deeplearning
+
