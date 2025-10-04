@@ -5,6 +5,8 @@
 import streamlit as st
 import kagglehub
 import numpy as np
+import tensorflow as tf
+import json
 from tensorflow.keras.optimizers import Adam, SGD
 
 from data_processing import load_skin_cancer_data
@@ -18,14 +20,13 @@ from streamlit_frontpage import show_front_page
 # ----------------------------
 show_front_page()
 
-st.markdown("---")  # Divider line
 
 # ----------------------------
 # Sidebar: Training Parameters
 # ----------------------------
 st.sidebar.header("⚙️ Training Configuration")
 
-epochs = st.sidebar.slider("Number of Epochs", min_value=5, max_value=20, value=10, step=5)
+epochs = st.sidebar.slider("Number of Epochs", min_value=3, max_value=70, value=10, step=5)
 batch_size = st.sidebar.selectbox("Batch Size", [16, 32, 64, 128], index=1)
 learning_rate = st.sidebar.selectbox("Learning Rate", [0.1, 0.01, 0.001, 0.0001], index=2)
 optimizer_choice = st.sidebar.radio("Optimizer", ["Adam", "SGD"], index=0)
@@ -68,13 +69,13 @@ if "path" in st.session_state:
         X_batch, y_batch = next(train_gen)
         st.write("Sample training images:")
         class_labels = list(train_gen.class_indices.keys())  # e.g. ["benign", "malignant"]
+        st.write(f"Class labels: {class_labels}")
 
         # Convert one-hot or categorical labels to integers
         labels = np.argmax(y_batch[:5], axis=1)
 
-        # Map each label index to its class name
-        captions = [class_labels[i] for i in labels]
-        st.image(X_batch[:5], caption=captions, width=100)
+        # # Map each label index to its class name
+        st.image(X_batch[:5], width=100) # Display images
         st.session_state['class_labels'] = class_labels  # store for later use
 
 # ----------------------------
@@ -101,8 +102,22 @@ if "class_labels" in st.session_state:
                 metrics=['accuracy']
             )
             
-            st.success("CNN model created successfully!")
+            st.success("CNN model created successfully! Train CNN Model Now.")
             st.session_state['model'] = model
+            # Debug: run a forward pass on a small batch to inspect raw outputs and per-sample loss before training
+            try:
+                X_check, y_check = next(st.session_state.train_gen)
+                preds_before = model.predict(X_check[:5])
+                try:
+                    loss_vals = tf.keras.losses.categorical_crossentropy(y_check[:5], preds_before).numpy().tolist()
+                except Exception:
+                    # fallback if tensors are not directly compatible
+                    loss_vals = [float(v) for v in tf.keras.losses.categorical_crossentropy(tf.convert_to_tensor(y_check[:5]), tf.convert_to_tensor(preds_before)).numpy()]
+                st.write("preds_before (first 5):", preds_before.tolist())
+                st.write("labels_before (first 5):", np.argmax(y_check[:5], axis=1).tolist())
+                st.write("per-sample loss before training (first 5):", loss_vals)
+            except Exception as e:
+                st.write("Could not run pre-training predict check:", e)
 
 # ----------------------------
 # STEP 4: Train the CNN
@@ -171,4 +186,18 @@ if "model" in st.session_state:
 
         st.success("✅ Training complete!")
         st.write("Training Performance:")
-        st.pyplot(plot_training_history(history_dict))
+        # Debug: show the numeric history to inspect why plots look flat
+        st.write("Raw history dict:", history_dict)
+        # Persist history in session state for further inspection
+        st.session_state['history_dict'] = history_dict
+
+        # Save history to a JSON file for offline inspection
+        try:
+            with open('training_history.json', 'w', encoding='utf-8') as f:
+                json.dump(history_dict, f, ensure_ascii=False, indent=2)
+            st.info("Saved training history to training_history.json")
+        except Exception as e:
+            st.warning(f"Could not save training history to file: {e}")
+
+        # Plot using the persisted history
+        st.pyplot(plot_training_history(st.session_state['history_dict']))

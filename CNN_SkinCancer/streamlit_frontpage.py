@@ -47,28 +47,4 @@ def show_front_page():
     """)
 
     st.info("💡 Tip: Start with transfer learning and augmentation to get better results with limited data.")
-
-    # ------------------------------
-    # IMAGE PREVIEW SECTION
-    # ------------------------------
-    st.markdown("## 🔍 Sample Images from the Dataset")
-
-    dataset_dir = "jaiahuja/skin-cancer-detection"  # adjust if your dataset path differs
-    categories = ["benign", "malignant"]
-
-    # Loop through each category and show random samples
-    for category in categories:
-        category_path = os.path.join(dataset_dir, category)
-        if not os.path.exists(category_path):
-            st.warning(f"Directory not found: {category_path}")
-            continue
-
-        # Pick 2 random images from this category
-        sample_images = random.sample(os.listdir(category_path), 2)
-
-        st.subheader(f"Class: {category} ({len(os.listdir(category_path))} images)")
-        cols = st.columns(2)  # 5 images in a row
-
-        for i, img_name in enumerate(sample_images):
-            img_path = os.path.join(category_path, img_name)
-            cols[i].image(img_path, caption=f"{category}", use_column_width=True)
+    st.markdown("---")
