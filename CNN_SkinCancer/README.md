@@ -92,4 +92,4 @@ Contact
 
 - For questions or issues, open an issue in this repository.
 
-This project was developed with assistance from ChatGPT.
+
