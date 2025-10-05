@@ -25,8 +25,8 @@ def load_skin_cancer_data(dataset_root, img_size=(64, 64), batch_size=32):
     df_test = pd.read_csv(test_csv)
 
     # Ensure 'filepath' column is absolute path for Keras
-    df_train['filepath'] = df_train['filepath'].apply(lambda x: str(dataset_root.parent / x))
-    df_test['filepath'] = df_test['filepath'].apply(lambda x: str(dataset_root.parent / x))
+    df_train['filepath'] = df_train['filepath'].apply(lambda x: str(dataset_root / x))
+    df_test['filepath'] = df_test['filepath'].apply(lambda x: str(dataset_root / x))
 
     # Keras ImageDataGenerator (rescale pixel values)
     train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.1)

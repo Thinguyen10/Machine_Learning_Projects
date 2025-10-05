@@ -5,7 +5,8 @@ A small project that trains a Convolutional Neural Network (CNN) to classify der
 Dataset
 
 - Source: `jaiahuja/skin-cancer-detection` (Kaggle) — images derived from the ISIC archive.
-- Approx. 2,357 images, two classes: `benign` and `malignant`.
+- Approx. 2,357 images across multiple classes, including `benign keratosis`, `melanoma`, `nevus`, and other skin lesion types.
+
 
 Project highlights
 
