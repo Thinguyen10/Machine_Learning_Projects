@@ -5,7 +5,16 @@ A small project that trains a Convolutional Neural Network (CNN) to classify der
 Dataset
 
 - Source: `jaiahuja/skin-cancer-detection` (Kaggle) — images derived from the ISIC archive.
-- Approx. 2,357 images across multiple classes, including `benign keratosis`, `melanoma`, `nevus`, and other skin lesion types.
+- Approx. 2,357 images across multiple diseases:
+  - Actinic keratosis
+  - Basal cell carcinoma
+  - Dermatofibroma
+  - Melanoma
+  - Nevus
+  - Pigmented benign keratosis
+  - Seborrheic keratosis
+  - Squamous cell carcinoma
+  - Vascular lesion
 
 
 Project highlights
@@ -49,7 +58,7 @@ Files and responsibilities
 - `utils.py` — `plot_training_history(history_dict)` plots training/validation loss and accuracy. The Streamlit app calls this to visualize results.
 - `create_labels_csv.py` — Scans dataset folders (Train/Test) and 
   generates CSV label files (`train_labels.csv`, `test_labels.csv`) 
-  listing image paths and corresponding class labels.
+  listing image paths and corresponding class labels. These labels are used to train CNN model to predict the disease on future test set.
 - `requirements.txt` — Python dependencies used by the project.
 
 Configuration & hyperparameters (Streamlit sidebar)
