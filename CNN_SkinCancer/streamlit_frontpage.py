@@ -10,14 +10,24 @@ def show_front_page():
     st.markdown("""
     ## Overview
     The **Skin Cancer Detection** dataset (by Jai Ahuja on Kaggle) is designed for building 
-    **Convolutional Neural Network (CNN)** models to classify skin lesions as **benign** or **malignant**.  
+    **Convolutional Neural Network (CNN)** models to classify skin lesions.
+    The dataset contains approximately 2,357 images across multiple diseases:
+  - Actinic keratosis
+  - Basal cell carcinoma
+  - Dermatofibroma
+  - Melanoma
+  - Nevus
+  - Pigmented benign keratosis
+  - Seborrheic keratosis
+  - Squamous cell carcinoma
+  - Vascular lesion
+                
     The images are derived from the **International Skin Imaging Collaboration (ISIC)** archive.
     """)
 
     st.markdown("""
     ## Data Characteristics
     - **Number of images**: ~2,357
-    - **Classes / Labels**: Benign, Malignant
     - **Image Source**: Dermoscopic / skin lesion images from ISIC archive
     - **Intended Use**: Training/testing CNNs or other ML models for lesion classification
     """)
@@ -25,14 +35,14 @@ def show_front_page():
     st.markdown("""
     ## Strengths
     - Open and accessible for reproducible research  
-    - Clear binary classification task (benign vs malignant)  
+    - Clear classification task (multiple skin lesion types)  
     - Derived from a recognized source (ISIC archive)  
     """)
 
     st.markdown("""
     ## Limitations / Challenges
     - ⚠️ **Relatively small sample size** (2,357 images)  
-    - ⚠️ **Possible class imbalance** (malignant vs benign not clearly specified)  
+    - ⚠️ **Possible class imbalance** 
     - ⚠️ **Limited metadata** (mostly just image + label)  
     - ⚠️ **Generalization risk** if used in isolation  
     """)

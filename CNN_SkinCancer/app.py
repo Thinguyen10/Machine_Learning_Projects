@@ -50,14 +50,13 @@ else:
 
 
 # ----------------------------
-# STEP 1: Download dataset (default path, auto)
+# STEP 0: Download dataset (default path, auto)
 # ----------------------------
 st.subheader("Dataset: jaiahuja/skin-cancer-detection")
 st.write("The dataset will be downloaded automatically from KaggleHub.")
 
 # Download dataset
 path = kagglehub.dataset_download("jaiahuja/skin-cancer-detection")
-st.session_state['path'] = path
 DATA_DIR = Path(path)
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff'}
 
@@ -75,83 +74,70 @@ def find_split_folder(base: Path):
     return base  # fallback if structure is flat
 
 DATA_ROOT = find_split_folder(DATA_DIR)
-st.info(f"Detected dataset root: {DATA_ROOT}")
+st.session_state['data_root'] = DATA_ROOT
 
 # ----------------------------
 # STEP 1.6: Generate label CSVs (Train/Test)
 # ----------------------------
+if "data_root" in st.session_state:
+    st.subheader("Step 1: Generate CSVs for Dataset Splits")
+    # Explain the goal of this step
+    st.write("In this step, CSV label files will be generated that map each image to its class. "
+            "These CSVs make it easier for the model to load and understand which images belong to which categories (e.g., nevus, melanoma, seborrheic keratosis, etc.).")
 
-# def scan_folder(root_dir: Path):
-#     """
-#     Scan a folder with subfolders per class and return list of (relative_path, label).
-#     Paths are relative to DATA_ROOT for compatibility with Keras.
-#     """
-#     data = []
-#     for label_dir in sorted(root_dir.iterdir()):
-#         if not label_dir.is_dir():
-#             continue
-#         label = label_dir.name
-#         for img_file in sorted(label_dir.rglob('*')):
-#             if img_file.suffix.lower() in IMAGE_EXTS:
-#                 # Path relative to dataset root
-#                 rel_path = str(img_file.relative_to(DATA_ROOT))
-#                 data.append((rel_path, label))
-#     return data
+    if st.button("Generate CSVs"):
+        DATA_ROOT = Path(st.session_state["data_root"])
+        IMAGE_EXTS = ['.jpg', '.jpeg', '.png']
 
-def scan_folder(root_dir: Path):
-    """Return list of (absolute_path, label) tuples."""
-    data = []
-    for label_dir in sorted(root_dir.iterdir()):
-        if not label_dir.is_dir():
-            continue
-        label = label_dir.name
-        for img_file in sorted(label_dir.rglob('*')):
-            if img_file.suffix.lower() in IMAGE_EXTS:
-                # absolute path
-                abs_path = str(img_file.resolve())
-                data.append((abs_path, label))
-    return data
+        def scan_folder(root_dir: Path):
+            """Return list of (absolute_path, label) tuples."""
+            data = []
+            for label_dir in sorted(root_dir.iterdir()):
+                if not label_dir.is_dir():
+                    continue
+                label = label_dir.name
+                for img_file in sorted(label_dir.rglob('*')):
+                    if img_file.suffix.lower() in IMAGE_EXTS:
+                        abs_path = str(img_file.resolve())
+                        data.append((abs_path, label))
+            return data
 
+        def write_csv(data, out_csv: Path):
+            """Write list of (filepath, label) to a CSV file."""
+            with open(out_csv, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['filepath', 'label'])
+                writer.writerows(data)
+            st.success(f"✅ Wrote {len(data)} entries → {out_csv}")
 
-def write_csv(data, out_csv: Path):
-    """Write the list of (filepath, label) to a CSV."""
-    with open(out_csv, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(['filepath', 'label'])
-        writer.writerows(data)
-    st.success(f"✅ Wrote {len(data)} entries → {out_csv}")
+        csv_files = []
+        for split_dir in DATA_ROOT.iterdir():
+            if split_dir.is_dir() and split_dir.name.lower() in ['train', 'test']:
+                split_name = split_dir.name
+                data = scan_folder(split_dir)
+                if not data:
+                    st.warning(f"No images found in {split_dir}")
+                    continue
 
-# Generate CSVs for all splits
-csv_files = []
-for split_name in ['Train', 'Test', 'train', 'test']:
-    split_dir = DATA_ROOT / split_name
-    if split_dir.exists():
-        st.write(f"📂 Scanning {split_dir} ...")
-        data = scan_folder(split_dir)
-        if not data:
-            st.warning(f"No images found in {split_dir}")
-            continue
-
-        # Save CSV inside dataset root so data_processing.py can find it
-        csv_path = Path(path) / f"{split_name.lower()}_labels.csv"
-        write_csv(data, csv_path)
+                csv_path = DATA_ROOT / f"{split_name.lower()}_labels.csv"
+                write_csv(data, csv_path)
+                csv_files.append(str(csv_path))
 
 
-        # Quick preview
-        df = pd.read_csv(csv_path)
-        st.write(df.head())
-        csv_files.append(csv_path)
-
-if not csv_files:
-    st.error("No CSVs generated. Please verify the folder structure in the downloaded dataset.")
+        if csv_files:
+            st.session_state["csv"] = csv_files
+        else:
+            st.error("No CSVs generated. Please verify your dataset folder structure.")
+else:
+    st.warning("Please complete the previous step to select your dataset path first.")
 
 # ----------------------------
 # STEP 2: Load dataset
 # ----------------------------
 
-if "path" in st.session_state:
+if "csv" in st.session_state:
 
-    st.subheader("Step 1: Load Training and Validation Data")
+    st.subheader("Step 2: Load Training and Validation Data")
 
     # Button to trigger dataset loading
     if st.button("Load Dataset"):
@@ -209,7 +195,7 @@ if "path" in st.session_state:
 # STEP 3: Create CNN Model
 # ----------------------------
 if "class_labels" in st.session_state:
-    st.subheader("Step 2: Create CNN Model")
+    st.subheader("Step 3: Create CNN Model")
 
     if st.button("Create CNN Model"):
         if "train_gen" not in st.session_state:
@@ -236,7 +222,7 @@ if "class_labels" in st.session_state:
 # STEP 4: Train CNN Model
 # ----------------------------
 if st.session_state.get("step3_done", False):
-    st.subheader("Step 3: Train the CNN Model")
+    st.subheader("Step 4: Train the CNN Model")
 
     if st.button("Train CNN"):
         if "train_gen" not in st.session_state or "val_gen" not in st.session_state:
@@ -282,7 +268,7 @@ if st.session_state.get("step3_done", False):
 # STEP 5: Random Test Image Prediction
 # ----------------------------
 if st.session_state.get("step4_done", False) and "test_gen" in st.session_state:
-    st.subheader("Step 4: Random Test Image Prediction")
+    st.subheader("Step 5: Random Test Image Prediction")
 
     if st.button("Show Random Prediction"):
         import random
@@ -307,14 +293,14 @@ if st.session_state.get("step4_done", False) and "test_gen" in st.session_state:
         pred_conf = pred_probs[0][pred_idx] * 100
 
         st.image(img, width=200,
-                 caption=f"True: {true_label_name} | Predicted: {pred_label} ({pred_conf:.1f}%)")
+                 caption=f"True: {true_label_name}\nPredicted: {pred_label}\nConfidence: {pred_conf:.1f}%")
         st.session_state['step5_done'] = True
 
 # ----------------------------
 # STEP 6: Display Training History
 # ----------------------------
 if st.session_state.get("step5_done", False):
-    st.subheader("Step 5: Training Performance")
+    st.subheader("Step 6: Training Performance")
 
     st.write("Raw history dict:", st.session_state['history_dict'])
 
