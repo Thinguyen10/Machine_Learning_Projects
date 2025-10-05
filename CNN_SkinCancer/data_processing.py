@@ -70,7 +70,7 @@
 # data_processing.py
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-def load_skin_cancer_data_from_df(df_train, df_test, img_size=(64,64), batch_size=32):
+def load_skin_cancer_data(df_train, df_test, img_size=(64,64), batch_size=32):
     """
     Load skin cancer images using DataFrames instead of CSVs.
     Returns train_gen, val_gen, test_gen

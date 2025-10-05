@@ -245,10 +245,10 @@ if "csv_data" in st.session_state:
     st.subheader("Step 2: Load Training and Validation Data")
 
     if st.button("Load Dataset"):
-        from data_processing import load_skin_cancer_data_from_df
+        from data_processing import load_skin_cancer_data
 
         csv_data = st.session_state["csv_data"]
-        train_gen, val_gen, test_gen = load_skin_cancer_data_from_df(
+        train_gen, val_gen, test_gen = load_skin_cancer_data(
             df_train=csv_data['train'],
             df_test=csv_data['test'],
             img_size=img_size,
