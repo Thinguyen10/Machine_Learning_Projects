@@ -76,18 +76,134 @@ def find_split_folder(base: Path):
 DATA_ROOT = find_split_folder(DATA_DIR)
 st.session_state['data_root'] = DATA_ROOT
 
+# # ----------------------------
+# # STEP 1.6: Generate label CSVs (Train/Test)
+# # ----------------------------
+# if "data_root" in st.session_state:
+#     st.subheader("Step 1: Generate CSVs for Dataset Splits")
+#     # Explain the goal of this step
+#     st.write("In this step, CSV label files will be generated that map each image to its class. "
+#             "These CSVs make it easier for the model to load and understand which images belong to which categories (e.g., nevus, melanoma, seborrheic keratosis, etc.).")
+
+#     if st.button("Generate CSVs"):
+#         DATA_ROOT = Path(st.session_state["data_root"])
+#         IMAGE_EXTS = ['.jpg', '.jpeg', '.png']
+
+#         def scan_folder(root_dir: Path):
+#             """Return list of (absolute_path, label) tuples."""
+#             data = []
+#             for label_dir in sorted(root_dir.iterdir()):
+#                 if not label_dir.is_dir():
+#                     continue
+#                 label = label_dir.name
+#                 for img_file in sorted(label_dir.rglob('*')):
+#                     if img_file.suffix.lower() in IMAGE_EXTS:
+#                         abs_path = str(img_file.resolve())
+#                         data.append((abs_path, label))
+#             return data
+
+#         def write_csv(data, out_csv: Path):
+#             """Write list of (filepath, label) to a CSV file."""
+#             with open(out_csv, 'w', newline='', encoding='utf-8') as f:
+#                 writer = csv.writer(f)
+#                 writer.writerow(['filepath', 'label'])
+#                 writer.writerows(data)
+#             st.success(f"✅ Wrote {len(data)} entries → {out_csv}")
+
+#         csv_files = []
+#         for split_dir in DATA_ROOT.iterdir():
+#             if split_dir.is_dir() and split_dir.name.lower() in ['train', 'test']:
+#                 split_name = split_dir.name
+#                 data = scan_folder(split_dir)
+#                 if not data:
+#                     st.warning(f"No images found in {split_dir}")
+#                     continue
+
+#                 csv_path = DATA_ROOT / f"{split_name.lower()}_labels.csv"
+#                 write_csv(data, csv_path)
+#                 csv_files.append(str(csv_path))
+
+
+#         if csv_files:
+#             st.session_state["csv"] = csv_files
+#         else:
+#             st.error("No CSVs generated. Please verify your dataset folder structure.")
+# else:
+#     st.warning("Please complete the previous step to select your dataset path first.")
+
+# # ----------------------------
+# # STEP 2: Load dataset
+# # ----------------------------
+
+# if "csv" in st.session_state:
+
+#     st.subheader("Step 2: Load Training and Validation Data")
+
+#     # Button to trigger dataset loading
+#     if st.button("Load Dataset"):
+
+#         # -----------------------------
+#         # Load data using the CSVs generated in Step 1.6
+#         # This ensures that all class labels are correctly read, even if the folder structure is nested
+#         # Returns three generators: training, validation, and test
+#         # -----------------------------
+#         train_gen, val_gen, test_gen = load_skin_cancer_data(
+#             path,             # Path to the dataset root
+#             img_size=img_size,   # Target size for images (tuple)
+#             batch_size=batch_size # Batch size for generators
+#         )
+#         # Store generators in session state for later use in training and evaluation
+#         st.session_state.train_gen = train_gen
+#         st.session_state.val_gen = val_gen
+#         st.session_state.test_gen = test_gen
+
+#         # -----------------------------
+#         # Preview a batch of training images
+#         # -----------------------------
+#         # Get the first batch of images and labels from the training generator
+#         X_batch, y_batch = next(train_gen)
+
+#             # Safety check: ensure batch is not empty
+#         if len(X_batch) == 0 or len(y_batch) == 0:
+#             st.error("Training generator is empty. Check CSV paths and image files.")
+#         else:
+#             labels_idx = y_batch.argmax(axis=1)
+
+#         # Extract class label names from the generator (e.g., ["Melanoma", "Nevus", ...])
+#         class_labels = list(train_gen.class_indices.keys())
+#         st.session_state['class_labels'] = class_labels  # store for later steps
+
+#         # Display the class labels detected
+#         st.write(f"Class labels detected: {class_labels}")
+
+#         # Convert one-hot encoded labels to integer indices
+#         labels_idx = y_batch.argmax(axis=1)
+
+#         # -----------------------------
+#         # Display first 5 images with their corresponding labels
+#         # -----------------------------
+#         st.write("Sample images with labels:")
+#         cols = st.columns(5)  # create 5 columns for side-by-side display
+#         for i, col in enumerate(cols):
+#             img = X_batch[i]                      # get image
+#             label_idx = labels_idx[i]             # get label index
+#             # Map label index to class name; fallback to "Unknown" if out of bounds
+#             label_name = class_labels[label_idx] if label_idx < len(class_labels) else "Unknown"
+#             col.image(img, width=100, caption=label_name)  # display image with label
+
 # ----------------------------
-# STEP 1.6: Generate label CSVs (Train/Test)
+# STEP 1.6: Generate CSV labels for Train/Test
 # ----------------------------
 if "data_root" in st.session_state:
     st.subheader("Step 1: Generate CSVs for Dataset Splits")
-    # Explain the goal of this step
-    st.write("In this step, CSV label files will be generated that map each image to its class. "
-            "These CSVs make it easier for the model to load and understand which images belong to which categories (e.g., nevus, melanoma, seborrheic keratosis, etc.).")
+    st.write(
+        "CSV label files will be generated mapping each image to its class. "
+        "This helps the model know which images belong to which categories (e.g., nevus, melanoma, seborrheic keratosis)."
+    )
 
     if st.button("Generate CSVs"):
         DATA_ROOT = Path(st.session_state["data_root"])
-        IMAGE_EXTS = ['.jpg', '.jpeg', '.png']
+        IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
 
         def scan_folder(root_dir: Path):
             """Return list of (absolute_path, label) tuples."""
@@ -98,98 +214,66 @@ if "data_root" in st.session_state:
                 label = label_dir.name
                 for img_file in sorted(label_dir.rglob('*')):
                     if img_file.suffix.lower() in IMAGE_EXTS:
-                        abs_path = str(img_file.resolve())
-                        data.append((abs_path, label))
+                        data.append((str(img_file.resolve()), label))
             return data
 
-        def write_csv(data, out_csv: Path):
-            """Write list of (filepath, label) to a CSV file."""
-            with open(out_csv, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['filepath', 'label'])
-                writer.writerows(data)
-            st.success(f"✅ Wrote {len(data)} entries → {out_csv}")
-
-        csv_files = []
+        csv_data = {}
         for split_dir in DATA_ROOT.iterdir():
             if split_dir.is_dir() and split_dir.name.lower() in ['train', 'test']:
-                split_name = split_dir.name
+                split_name = split_dir.name.lower()
                 data = scan_folder(split_dir)
                 if not data:
                     st.warning(f"No images found in {split_dir}")
                     continue
 
-                csv_path = DATA_ROOT / f"{split_name.lower()}_labels.csv"
-                write_csv(data, csv_path)
-                csv_files.append(str(csv_path))
+                df = pd.DataFrame(data, columns=['filepath', 'label'])
+                csv_data[split_name] = df
+                st.success(f"✅ {split_name.capitalize()} CSV generated with {len(df)} entries")
 
-
-        if csv_files:
-            st.session_state["csv"] = csv_files
+        if csv_data:
+            st.session_state["csv_data"] = csv_data
         else:
-            st.error("No CSVs generated. Please verify your dataset folder structure.")
+            st.error("No CSVs generated. Please check your dataset folder structure.")
 else:
     st.warning("Please complete the previous step to select your dataset path first.")
 
-# ----------------------------
-# STEP 2: Load dataset
-# ----------------------------
 
-if "csv" in st.session_state:
-
+# ----------------------------
+# STEP 2: Load dataset using in-memory CSVs
+# ----------------------------
+if "csv_data" in st.session_state:
     st.subheader("Step 2: Load Training and Validation Data")
 
-    # Button to trigger dataset loading
     if st.button("Load Dataset"):
+        from data_processing import load_skin_cancer_data_from_df
 
-        # -----------------------------
-        # Load data using the CSVs generated in Step 1.6
-        # This ensures that all class labels are correctly read, even if the folder structure is nested
-        # Returns three generators: training, validation, and test
-        # -----------------------------
-        train_gen, val_gen, test_gen = load_skin_cancer_data(
-            path,             # Path to the dataset root
-            img_size=img_size,   # Target size for images (tuple)
-            batch_size=batch_size # Batch size for generators
+        csv_data = st.session_state["csv_data"]
+        train_gen, val_gen, test_gen = load_skin_cancer_data_from_df(
+            df_train=csv_data['train'],
+            df_test=csv_data['test'],
+            img_size=img_size,
+            batch_size=batch_size
         )
-        # Store generators in session state for later use in training and evaluation
+
         st.session_state.train_gen = train_gen
         st.session_state.val_gen = val_gen
         st.session_state.test_gen = test_gen
 
-        # -----------------------------
-        # Preview a batch of training images
-        # -----------------------------
-        # Get the first batch of images and labels from the training generator
+        # Preview first batch
         X_batch, y_batch = next(train_gen)
-
-            # Safety check: ensure batch is not empty
-        if len(X_batch) == 0 or len(y_batch) == 0:
-            st.error("Training generator is empty. Check CSV paths and image files.")
-        else:
-            labels_idx = y_batch.argmax(axis=1)
-
-        # Extract class label names from the generator (e.g., ["Melanoma", "Nevus", ...])
+        labels_idx = y_batch.argmax(axis=1)
         class_labels = list(train_gen.class_indices.keys())
-        st.session_state['class_labels'] = class_labels  # store for later steps
+        st.session_state['class_labels'] = class_labels
 
-        # Display the class labels detected
         st.write(f"Class labels detected: {class_labels}")
 
-        # Convert one-hot encoded labels to integer indices
-        labels_idx = y_batch.argmax(axis=1)
-
-        # -----------------------------
-        # Display first 5 images with their corresponding labels
-        # -----------------------------
         st.write("Sample images with labels:")
-        cols = st.columns(5)  # create 5 columns for side-by-side display
+        cols = st.columns(5)
         for i, col in enumerate(cols):
-            img = X_batch[i]                      # get image
-            label_idx = labels_idx[i]             # get label index
-            # Map label index to class name; fallback to "Unknown" if out of bounds
+            img = X_batch[i]
+            label_idx = labels_idx[i]
             label_name = class_labels[label_idx] if label_idx < len(class_labels) else "Unknown"
-            col.image(img, width=100, caption=label_name)  # display image with label
+            col.image(img, width=100, caption=label_name)
 
 # ----------------------------
 # STEP 3: Create CNN Model
