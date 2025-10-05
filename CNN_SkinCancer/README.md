@@ -47,6 +47,9 @@ Files and responsibilities
   - Flatten -> Dense(128, relu) -> Dense(num_classes, softmax)
 - `train.py` — `train_and_evaluate(model, train_gen, val_gen, epochs=50)` compiles (categorical_crossentropy, Adam) and trains the model. Also evaluates on validation data.
 - `utils.py` — `plot_training_history(history_dict)` plots training/validation loss and accuracy. The Streamlit app calls this to visualize results.
+- `create_labels_csv.py` — Scans dataset folders (Train/Test) and 
+  generates CSV label files (`train_labels.csv`, `test_labels.csv`) 
+  listing image paths and corresponding class labels.
 - `requirements.txt` — Python dependencies used by the project.
 
 Configuration & hyperparameters (Streamlit sidebar)
@@ -88,3 +91,5 @@ License
 Contact
 
 - For questions or issues, open an issue in this repository.
+
+This project was developed with assistance from ChatGPT.
