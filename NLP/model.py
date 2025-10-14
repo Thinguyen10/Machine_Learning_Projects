@@ -44,7 +44,9 @@ def train_sklearn(X_train, X_test, y_train, y_test, model_path: Optional[str] = 
     if model_path:
         joblib.dump(clf, model_path)
 
-    return {"accuracy": acc, "report": report}
+    metrics = {"accuracy": acc, "report": report}
+    # Return metrics and trained model so callers (e.g., UI) can persist or use it
+    return metrics, clf
 
 
 def build_keras_model(input_dim: int) -> object:
@@ -100,7 +102,9 @@ def train_keras(X_train, X_test, y_train, y_test, epochs: int = 5, batch_size: i
     if model_path:
         model.save(model_path)
 
-    return {"loss": float(loss), "accuracy": float(acc)}
+    metrics = {"loss": float(loss), "accuracy": float(acc)}
+    # Return metrics and the trained Keras model as well
+    return metrics, model
 
 
 def save_vectorizer(vectorizer, path: str):
@@ -109,6 +113,80 @@ def save_vectorizer(vectorizer, path: str):
 
 def load_vectorizer(path: str):
     return joblib.load(path)
+
+
+def save_model(model, path: str, backend: str = "sklearn"):
+    """Save a trained model.
+
+    - For sklearn, `joblib.dump` is used (path typically ends with .joblib)
+    - For keras, `model.save(path)` will write a SavedModel directory
+    """
+    if backend == "sklearn":
+        joblib.dump(model, path)
+    elif backend == "keras":
+        # Keras models expose a .save() method
+        model.save(path)
+    else:
+        raise ValueError("Unknown backend for save_model: %s" % backend)
+
+
+def load_model(path: str, backend: str = "sklearn"):
+    """Load a model saved with `save_model`.
+
+    Returns the loaded model object.
+    """
+    if backend == "sklearn":
+        return joblib.load(path)
+    elif backend == "keras":
+        try:
+            import tensorflow as tf
+        except Exception as e:
+            raise ImportError("TensorFlow required to load Keras model: %s" % e)
+        return tf.keras.models.load_model(path)
+    else:
+        raise ValueError("Unknown backend for load_model: %s" % backend)
+
+
+def predict_text(model, vect, text: str, backend: str = "sklearn"):
+    """Predict a single text string and return (label, prob).
+
+    - `vect` should be a fitted vectorizer (e.g., TfidfVectorizer) loaded with `load_vectorizer`.
+    - For sklearn: returns model.predict(X)[0] and positive-class probability (if available).
+    - For keras: returns 0/1 label and probability (sigmoid output assumed).
+    """
+    proc_text = text if isinstance(text, str) else str(text)
+    X = vect.transform([proc_text])
+
+    if backend == "sklearn":
+        # Predict label
+        label = model.predict(X)[0]
+        prob = None
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X)[0]
+            # Try to pick probability of positive class if label space is {0,1}
+            if hasattr(model, 'classes_'):
+                classes = list(model.classes_)
+                if 1 in classes:
+                    pos_idx = classes.index(1)
+                else:
+                    pos_idx = 1 if len(classes) > 1 else 0
+            else:
+                pos_idx = 1 if len(probs) > 1 else 0
+            prob = float(probs[pos_idx])
+        return label, prob
+
+    elif backend == "keras":
+        if hasattr(X, 'toarray'):
+            X_in = X.toarray()
+        else:
+            X_in = X
+        preds = model.predict(X_in)
+        prob = float(preds[0][0])
+        label = 1 if prob >= 0.5 else 0
+        return label, prob
+
+    else:
+        raise ValueError("Unknown backend for predict_text: %s" % backend)
 
 
 def main():

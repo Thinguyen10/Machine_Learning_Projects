@@ -236,6 +236,20 @@ def preview_data(csv_file: str,
 
     return out, vectorizer
 
+
+def preview_text(text: str):
+    """Return a small preview for a single text: cleaned string and token list.
+
+    This mirrors what the preprocessing pipeline does for dataset rows and is
+    intended for quick UI previews (e.g., in Streamlit) so users can see how
+    a single sentence will be transformed before vectorization.
+    """
+    if text is None:
+        return "", []
+    cleaned = clean_text(text)
+    tokens = tokenize_and_normalize(text)
+    return cleaned, tokens
+
 #To allow a file to be both importable (providing functions/classes) and runnable (performing a script-like action, e.g., a quick demo, CLI, or tests).
 if __name__ == "__main__":
     import argparse
