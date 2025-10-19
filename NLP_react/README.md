@@ -1,4 +1,4 @@
-###NLP React + FastAPI project
+### NLP React + FastAPI project
 
 Overview
 
