@@ -1,4 +1,4 @@
-NLP React + FastAPI project
+###NLP React + FastAPI project
 
 Overview
 
@@ -72,9 +72,6 @@ Troubleshooting
 - Missing dependencies: If errors reference `nltk`, `tensorflow`, or `sklearn`, install them into the active venv. For quick local tests we added some lightweight fallbacks for NLTK tokenization in `backend/processing.py` but full behavior requires installing `nltk`.
 - Training returns 400: usually because the CSV path isn't present or the CSV doesn't match expected columns. Check the path you pass to `/train` and verify the CSV format.
 
-Next steps and improvements
-- Add a file-upload endpoint to allow uploading the CSV from the React UI.
+Things to improve:
 - Add progress notifications for long-running training (background task + websocket or polling).
 - Improve frontend styling and make training UI match the Streamlit experience.
-
-If you'd like, I can implement the upload endpoint and a small React file-input to upload a CSV and trigger training from the browser. Let me know which next step you prefer.
