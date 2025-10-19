@@ -25,7 +25,7 @@ from sklearn.metrics import accuracy_score, classification_report
 # Defer importing TensorFlow until it's actually needed to avoid import-time
 # side-effects (useful when running under process managers like Streamlit).
 
-from backend.processing import process, preview_text
+from processing import process, preview_text
 
 
 def train_sklearn(X_train, X_test, y_train, y_test, model_path: Optional[str] = None) -> dict:
