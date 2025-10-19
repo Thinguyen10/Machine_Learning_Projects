@@ -25,7 +25,12 @@ from sklearn.metrics import accuracy_score, classification_report
 # Defer importing TensorFlow until it's actually needed to avoid import-time
 # side-effects (useful when running under process managers like Streamlit).
 
-from processing import process, preview_text
+try:
+    # when running as a package (uvicorn backend.main:app) prefer package imports
+    from backend.processing import process, preview_text
+except Exception:
+    # fallback for direct script execution (python backend/model.py)
+    from processing import process, preview_text
 
 
 def train_sklearn(X_train, X_test, y_train, y_test, model_path: Optional[str] = None) -> dict:
