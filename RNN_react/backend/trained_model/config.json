@@ -1,0 +1,10 @@
+{
+  "window_size": 7,
+  "vocab_size": 6628,
+  "num_words": 2500,
+  "embedding_dim": 50,
+  "lstm_units": 256,
+  "used_glove": true,
+  "train_accuracy": 0.18904022872447968,
+  "val_accuracy": 0.15536244213581085
+}

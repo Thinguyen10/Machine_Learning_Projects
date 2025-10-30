@@ -1,0 +1,11 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+torch>=2.0.0
+transformers>=4.30.0
+python-multipart==0.0.6
+# NumPy is required for sequence arrays and numeric ops used by sequence_builder
+numpy>=1.24.0
+
+# TensorFlow provides Keras Tokenizer and pad_sequences used in data_processing.
+tensorflow>=2.12.0
