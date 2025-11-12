@@ -1,83 +1,289 @@
-# NLP Sentiment Analysis with Neural Network Tuning
-
-Full-stack sentiment analysis application with **colorful modern UI**, React frontend, FastAPI backend, and **advanced neural network hyperparameter optimization achieving 5-15% accuracy improvements**.
-
-## 🎨 Beautiful Modern Interface
+# NLP Sentiment Analysis - Full Stack Application
 
 ![Status](https://img.shields.io/badge/UI-Colorful%20%26%20Modern-purple?style=for-the-badge)
 ![Deployment](https://img.shields.io/badge/Deploy-Vercel%20Ready-black?style=for-the-badge)
+![Models](https://img.shields.io/badge/Accuracy-68%25-green?style=for-the-badge)
 
-- **Vibrant gradients** with purple, blue, pink color scheme
-- **Glass morphism effects** for depth and modern look
-- **Comprehensive front page** explaining model architecture and improvements
-- **Interactive animations** with smooth transitions
-- **Emoji-enhanced UX** for visual clarity
-- **Fully responsive** design optimized for all devices
+A modern, full-stack sentiment analysis application featuring **beautiful gradients**, **pre-trained models**, and **dual backend support** (scikit-learn & Keras) for sentiment classification.
+
+## 🎨 Beautiful Modern Interface
+
+Transform from plain black-and-white to a stunning gradient-based design!
 
 ### Visual Features
-- 🎨 Animated gradient backgrounds
-- 💎 Glass morphism cards with backdrop blur
-- 🌈 Color-coded sentiment indicators (green=positive, red=negative)
-- 😊 Emoji icons throughout the interface
-- 🎯 Clear visual hierarchy and smooth hover effects
-- 📱 Mobile-first responsive design
+- 🎨 **Vibrant gradients** - Purple, blue, pink color scheme throughout
+- 💎 **Glass morphism effects** - Modern depth with backdrop blur
+- 🎯 **Front page** - Comprehensive explanation of model architecture
+- 🌈 **Color-coded results** - Green (positive), red (negative), gray (neutral)
+- 😊 **Emoji-enhanced UX** - Visual clarity and engagement
+- 📱 **Fully responsive** - Optimized for all devices
+- ✨ **Smooth animations** - Hover effects and transitions
 
-**See [UI_TRANSFORMATION.md](./UI_TRANSFORMATION.md) for complete visual transformation details.**
+## 🚀 Major Improvements
 
-## ⚡ Key Enhancements
+### 1. Pre-Trained Models (Not Runtime Training)
+**Before:** Models trained on-demand via UI buttons → slow, unreliable, could fail  
+**After:** Models pre-trained with optimized hyperparameters → fast, reliable, production-ready
 
-- **Epoch Optimization**: Quadratic peak detection finds optimal training epochs automatically
-- **Grid Search**: Systematic hyperparameter tuning (learning rate, hidden units, dropout)
-- **KerasTuner Integration**: Hyperband & Bayesian optimization for intelligent search
-- **Visualization**: Learning curves and quadratic fit plots for training diagnostics
-- **Performance**: 5-15% accuracy gain over baseline (78-82% → 85-90%)
+- ✅ Offline training with GridSearchCV for sklearn
+- ✅ Optimized Keras architecture (256→128→64 neurons)
+- ✅ Early stopping & learning rate reduction
+- ✅ Both models achieve **68% accuracy**
+
+### 2. Multi-Class Classification Fixed
+**Before:** Binary classification setup (sigmoid + binary_crossentropy) for 3-class problem → 30% accuracy  
+**After:** Proper multi-class setup (softmax + categorical_crossentropy) → 68% accuracy
+
+- Fixed: Output layer now uses softmax with 3 neurons
+- Fixed: Loss function changed to categorical_crossentropy
+- Fixed: Prediction uses argmax for class selection
+- **Result:** +38% accuracy improvement (30% → 68%)
+
+### 3. Model Selection UI
+**Before:** Train buttons in UI that could hang or fail  
+**After:** Elegant model selector to choose between pre-trained models
+
+- Select between sklearn (LogisticRegression) or keras (Neural Network)
+- View model metrics (accuracy, precision, recall, F1-score)
+- Color-coded cards (green for sklearn, purple for keras)
+- Disabled state if model not trained
+
+### 4. Enhanced API
+- ✅ Removed `/train` endpoint (training is offline now)
+- ✅ `/predict` accepts `backend` parameter (sklearn or keras)
+- ✅ `/artifacts` returns model status and metrics
+- ✅ Dual model loading support
+
+### 5. TensorFlow 2.x Compatibility
+- Fixed: `model.optimizer.lr` → `model.optimizer.learning_rate`
+- Fixed: Keras save path requires `.keras` extension
+- Fixed: Multi-class prediction logic
+
+## 📊 Model Performance
+
+Both models trained on 499 samples, tested on 100 samples:
+
+| Model | Accuracy | Precision | Recall | F1-Score |
+|-------|----------|-----------|--------|----------|
+| **Sklearn (LogisticRegression)** | 68% | 0.75 | 0.68 | 0.69 |
+| **Keras (Neural Network)** | 68% | 0.70 | 0.68 | 0.68 |
+
+### Per-Class Performance (Keras)
+
+| Sentiment | Precision | Recall | F1-Score |
+|-----------|-----------|--------|----------|
+| Negative | 0.76 | 0.69 | 0.72 |
+| Neutral | 0.56 | 0.73 | 0.64 |
+| Positive | 0.75 | 0.62 | 0.68 |
 
 ## Table of Contents
 - [Beautiful Modern Interface](#-beautiful-modern-interface)
-- [Quick Start](#quick-start)
-- [Deployment to Vercel](#deployment-to-vercel)
-- [Neural Network Tuning Module](#neural-network-tuning-module)
-- [Project Structure](#project-structure)
-- [API Endpoints](#api-endpoints)
-- [Mathematical Background](#mathematical-background)
-- [Troubleshooting](#troubleshooting)
+- [Major Improvements](#-major-improvements)
+- [Quick Start](#-quick-start)
+- [Training Models](#-training-models)
+- [Project Structure](#-project-structure)
+- [API Endpoints](#-api-endpoints)
+- [Deployment](#-deployment)
+- [What Changed](#-what-changed)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
-## Quick Start
+## 🏃 Quick Start
 
-### Backend Setup
+### 1. Clone and Install
+
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+git clone <your-repo-url>
+cd NLP_Improve
+```
+
+### 2. Train Models (One-Time Setup)
+
+```bash
+# Option 1: Using the bash script
+./train_models.sh
+
+# Option 2: Direct Python command
+python -m backend.train_models
+```
+
+This creates:
+- `vect.joblib` - TF-IDF vectorizer (104K)
+- `model_sklearn.joblib` - LogisticRegression model (65K)
+- `model_keras.keras` - Neural network model (8.5M)
+- `metrics_sklearn.json` - Sklearn performance metrics
+- `metrics_keras.json` - Keras performance metrics
+
+**Training takes 2-3 minutes and achieves 68% accuracy on both models.**
+
+### 3. Start Backend
+
+```bash
+# Install dependencies
 pip install -r backend/requirements.txt
+
+# Start server
 uvicorn backend.main:app --reload --port 8000
 ```
 
-### Frontend Setup
+Backend runs at http://localhost:8000
+
+### 4. Start Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Validate Tuning Module
+Frontend runs at http://localhost:5173
+
+### 5. Use the App
+
+1. Open http://localhost:5173
+2. Choose between **sklearn** or **keras** model
+3. Enter text to analyze sentiment
+4. View results with confidence scores!
+
+---
+
+## 🎯 Training Models
+
+### Quick Training
+
 ```bash
-python3 test_tuning_validation.py
+./train_models.sh
+```
+
+### What Happens During Training
+
+**Sklearn Model (LogisticRegression):**
+- GridSearchCV with 8 parameter combinations
+- Tests: C=[0.01, 0.1, 1.0, 10.0], solver=['lbfgs', 'liblinear']
+- 5-fold cross-validation
+- **Result:** 68% accuracy, best params: C=10.0, solver=liblinear
+
+**Keras Model (Neural Network):**
+- Architecture: 2714 → 256 → 128 → 64 → 3 (softmax)
+- Dropout layers: 0.5, 0.3, 0.2
+- Early stopping (patience=3)
+- Learning rate reduction (factor=0.5, patience=2)
+- **Result:** 68% accuracy, trained for 11 epochs
+
+### Model Files Location
+
+All models saved in project root:
+```
+NLP_Improve/
+├── vect.joblib
+├── model_sklearn.joblib
+├── model_keras.keras
+├── metrics_sklearn.json
+└── metrics_keras.json
 ```
 
 ---
 
-## Deployment to Vercel
+## 📁 Project Structure
 
-Deploy your beautiful sentiment analyzer to the world in minutes!
+```
+NLP_Improve/
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── model.py             # Model training/loading (ModelWrapper)
+│   ├── processing.py        # Text preprocessing (TF-IDF)
+│   ├── train_models.py      # ⭐ Pre-training script
+│   ├── sentiment_analysis.csv
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx          # Main app with model selection
+│   │   ├── components/
+│   │   │   ├── FrontPage.jsx      # Landing page
+│   │   │   ├── Header.jsx
+│   │   │   ├── InputSection.jsx   # Text input
+│   │   │   ├── ResultsSection.jsx # Prediction display
+│   │   │   ├── ModelSelector.jsx  # ⭐ Choose sklearn/keras
+│   │   │   ├── ExamplesSection.jsx
+│   │   │   └── InfoSection.jsx
+│   │   └── services/
+│   │       └── api.js       # API client (predict, artifacts)
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+├── train_models.sh          # ⭐ Training automation script
+├── vercel.json             # Vercel deployment config
+└── README.md
+```
 
-### Quick Deploy
+---
 
-**Option 1: GitHub Integration (Recommended)**
-1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) and import your repository
-3. Vercel auto-detects configuration and deploys!
+## 🔌 API Endpoints
+
+### `GET /health`
+Health check endpoint.
+
+**Response:**
+```json
+{"status": "ok"}
+```
+
+### `GET /artifacts`
+Get model status and metrics.
+
+**Response:**
+```json
+{
+  "sklearn_exists": true,
+  "keras_exists": true,
+  "vect_exists": true,
+  "sklearn_metrics": {
+    "accuracy": 0.68,
+    "precision": 0.75,
+    "recall": 0.68
+  },
+  "keras_metrics": {
+    "accuracy": 0.68,
+    "loss": 0.77,
+    "epochs_trained": 11
+  },
+  "available_models": ["sklearn", "keras"]
+}
+```
+
+### `POST /predict`
+Predict sentiment for text.
+
+**Request:**
+```json
+{
+  "text": "I love this product!",
+  "backend": "sklearn"  // or "keras"
+}
+```
+
+**Response:**
+```json
+{
+  "text": "I love this product!",
+  "label": "positive",
+  "probability": 0.92,
+  "backend": "sklearn"
+}
+```
+
+---
+
+## 🚀 Deployment
+
+### Deploy to Vercel
+
+**Option 1: GitHub Integration**
+1. Push code to GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Import your repository
+4. Vercel auto-deploys!
 
 **Option 2: Vercel CLI**
 ```bash
@@ -86,16 +292,191 @@ vercel login
 vercel --prod
 ```
 
-### What's Included
-- ✅ Vercel configuration (`vercel.json`)
-- ✅ Optimized build settings
-- ✅ Environment variable support
+### Configuration Included
+- ✅ `vercel.json` with build settings
+- ✅ `.vercelignore` to exclude unnecessary files
+- ✅ Optimized for serverless deployment
 - ✅ Automatic HTTPS
-- ✅ Custom domain support
 
-**For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md) and [DEPLOY_CHECKLIST.md](./DEPLOY_CHECKLIST.md)**
+**Note:** Remember to train models locally first, then commit the model files before deployment!
 
 ---
+
+## 📝 What Changed
+
+### Phase 1: UI Transformation
+**Problem:** Plain black-and-white interface, no visual appeal  
+**Solution:** Complete redesign with gradients, glass morphism, animations
+
+**Files Changed:**
+- All components in `frontend/src/components/`
+- `frontend/src/index.css` - Added Tailwind animations
+- `frontend/tailwind.config.js` - Custom animations
+- Created `FrontPage.jsx` with model explanation
+
+### Phase 2: Pre-Trained Models Architecture
+**Problem:** Runtime training via UI was slow, unreliable, could fail  
+**Solution:** Move training offline with optimized hyperparameters
+
+**Files Changed:**
+- Created `backend/train_models.py` - Comprehensive training script
+- Created `train_models.sh` - Bash automation
+- Modified `backend/model.py` - Added ModelWrapper class with dual model support
+- Modified `backend/main.py` - Removed /train endpoint, enhanced /predict and /artifacts
+- Created `frontend/src/components/ModelSelector.jsx` - UI for choosing models
+- Modified `frontend/src/services/api.js` - Removed train(), updated predict()
+
+### Phase 3: Multi-Class Classification Fix
+**Problem:** Binary classification setup for 3-class problem → 30% accuracy  
+**Solution:** Proper multi-class architecture with softmax and categorical loss
+
+**Files Changed:**
+- `backend/train_models.py`:
+  - Changed output layer: `Dense(1, sigmoid)` → `Dense(num_classes, softmax)`
+  - Changed loss: `binary_crossentropy` → `categorical_crossentropy`
+  - Added `to_categorical()` for labels
+  - Fixed predictions: `(prob >= 0.5)` → `argmax()`
+
+- `backend/model.py`:
+  - Updated `predict_text()` to handle multi-class predictions
+  - Added multi-class detection logic
+
+**Result:** Accuracy improved from 30% → 68%
+
+### Phase 4: TensorFlow 2.x Compatibility
+**Problem:** AttributeError with optimizer.lr, wrong file extension  
+**Solution:** Update to TensorFlow 2.x API
+
+**Fixes:**
+- `model.optimizer.lr` → `model.optimizer.learning_rate`
+- Model save path: `model_keras` → `model_keras.keras`
+- Updated model loading to support `.keras` extension
+
+### Summary of Improvements
+
+| Aspect | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **UI** | Plain black/white | Colorful gradients | ⭐⭐⭐⭐⭐ |
+| **Training** | Runtime (slow) | Pre-trained (fast) | ⭐⭐⭐⭐⭐ |
+| **Accuracy** | 30% (broken) | 68% (working) | +38% |
+| **Model Choice** | Single model | Dual (sklearn/keras) | ⭐⭐⭐⭐ |
+| **API** | /train endpoint | Pre-trained models | ⭐⭐⭐⭐⭐ |
+| **Deployment** | Not ready | Vercel-ready | ⭐⭐⭐⭐⭐ |
+
+---
+
+## 🔧 Troubleshooting
+
+### Models Not Loading
+**Symptom:** "Model not found" errors  
+**Solution:** Run `./train_models.sh` to create model files
+
+### Training Script Fails
+**Check:**
+1. `backend/sentiment_analysis.csv` exists
+2. Python dependencies installed: `pip install -r backend/requirements.txt`
+3. Using correct Python version (3.8+)
+
+### Frontend Can't Connect to Backend
+**Solution:**
+- Ensure backend is running on port 8000
+- Check `frontend/src/services/api.js` has correct API URL
+- Try: `uvicorn backend.main:app --reload --port 8000`
+
+### Low Prediction Quality
+- Models are trained on small dataset (499 samples)
+- 68% accuracy is reasonable for 3-class classification
+- To improve: collect more training data
+
+### Module Import Errors
+**Solution:** Run from project root, not from backend folder:
+```bash
+# ✅ Correct
+python -m backend.train_models
+
+# ❌ Wrong
+cd backend && python train_models.py
+```
+
+---
+
+## 🎓 Technical Details
+
+### Model Architecture
+
+**Sklearn Model:**
+- Algorithm: LogisticRegression
+- Features: TF-IDF (2,714 features)
+- Hyperparameters: C=10.0, max_iter=1000, solver=liblinear
+- Training: GridSearchCV with 5-fold CV
+
+**Keras Model:**
+```
+Input (2,714) 
+→ Dense(256, relu) → Dropout(0.5)
+→ Dense(128, relu) → Dropout(0.3)
+→ Dense(64, relu) → Dropout(0.2)
+→ Dense(3, softmax)
+
+Loss: categorical_crossentropy
+Optimizer: Adam(lr=0.001)
+Callbacks: EarlyStopping, ReduceLROnPlateau
+```
+
+### Text Preprocessing
+1. Convert to lowercase
+2. Remove special characters
+3. TF-IDF vectorization (max_features=5000)
+4. Train/test split (80/20)
+
+---
+
+## 📚 Technologies Used
+
+**Frontend:**
+- React 18.2
+- Vite 5.0
+- Tailwind CSS 3.4
+- Axios for API calls
+
+**Backend:**
+- Python 3.8+
+- FastAPI
+- TensorFlow 2.16
+- scikit-learn 1.7
+- pandas, nltk
+
+**Deployment:**
+- Vercel (frontend)
+- Serverless functions
+
+---
+
+## 👥 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 🙏 Acknowledgments
+
+- Dataset: Sentiment Analysis CSV
+- Frameworks: TensorFlow, scikit-learn, FastAPI, React
+- Inspiration: Modern UI/UX trends
+
+---
+
+**Built with ❤️ for CST-435 | NLP Improvement Project**
 
 ## Neural Network Tuning Module
 

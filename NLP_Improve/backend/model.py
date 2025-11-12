@@ -157,7 +157,7 @@ def predict_text(model, vect, text: str, backend: str = "sklearn"):
 
     - `vect` should be a fitted vectorizer (e.g., TfidfVectorizer) loaded with `load_vectorizer`.
     - For sklearn: returns model.predict(X)[0] and positive-class probability (if available).
-    - For keras: returns 0/1 label and probability (sigmoid output assumed).
+    - For keras: returns predicted class label and probability.
     """
     proc_text = text if isinstance(text, str) else str(text)
     X = vect.transform([proc_text])
@@ -185,9 +185,18 @@ def predict_text(model, vect, text: str, backend: str = "sklearn"):
             X_in = X.toarray()
         else:
             X_in = X
-        preds = model.predict(X_in)
-        prob = float(preds[0][0])
-        label = 1 if prob >= 0.5 else 0
+        preds = model.predict(X_in, verbose=0)
+        
+        # Check if multi-class (softmax output) or binary (sigmoid output)
+        if preds.shape[1] > 1:
+            # Multi-class: get class with highest probability
+            label = int(np.argmax(preds[0]))
+            prob = float(preds[0][label])
+        else:
+            # Binary: single sigmoid output
+            prob = float(preds[0][0])
+            label = 1 if prob >= 0.5 else 0
+        
         return label, prob
 
     else:
@@ -226,128 +235,132 @@ if __name__ == "__main__":
 
 # Lightweight runtime wrapper used by the FastAPI backend.
 class ModelWrapper:
-    """Simple wrapper that attempts to load a fitted vectorizer and a trained
-    model from the repository root. It prefers a sklearn joblib model when
-    available, otherwise will try to load a Keras SavedModel directory.
+    """Wrapper that loads fitted vectorizer and trained models.
+    Supports both sklearn and keras models, allowing users to choose which backend to use.
 
     Usage:
         mw = ModelWrapper()
-        label, prob = mw.predict("some text")
+        label, prob = mw.predict("some text", backend="sklearn")  # or "keras"
     """
 
-    def __init__(self, vect_path: str = "vect.joblib", skl_path: str = "model.joblib", keras_dir: str = "keras_model"):
-        # Accept paths but search common locations if the exact path isn't present
+    def __init__(self, vect_path: str = "vect.joblib", 
+                 skl_path: str = "model_sklearn.joblib", 
+                 keras_path: str = "model_keras.keras"):  # Changed from keras_dir to keras_path
+        # Search for files in multiple locations
         self.vect_candidates = [vect_path, os.path.join('backend', vect_path), os.path.join(os.getcwd(), vect_path)]
-        self.skl_candidates = [skl_path, os.path.join('backend', skl_path), os.path.join(os.getcwd(), skl_path)]
-        self.keras_candidates = [keras_dir, os.path.join('backend', keras_dir), os.path.join(os.getcwd(), keras_dir)]
-        self.vect_path = None
-        self.skl_path = None
-        self.keras_dir = None
+        self.skl_candidates = [skl_path, os.path.join('backend', skl_path), os.path.join(os.getcwd(), skl_path),
+                               "model.joblib", os.path.join('backend', "model.joblib")]
+        self.keras_candidates = [keras_path, os.path.join('backend', keras_path), os.path.join(os.getcwd(), keras_path),
+                                "model_keras.keras", os.path.join('backend', "model_keras.keras"),
+                                "model_keras", os.path.join('backend', "model_keras")]  # Keep legacy support
+        
         self.vect = None
-        self.model = None
-        self.backend = None
+        self.sklearn_model = None
+        self.keras_model = None
+        
+        # Load artifacts
+        self._load_vectorizer()
+        self._load_sklearn_model()
+        self._load_keras_model()
 
-        # Attempt initial load but allow lazy-loading later
-        self._initial_load()
-
-    def _initial_load(self):
-        # find and load vectorizer from candidates
+    def _load_vectorizer(self):
+        """Load the TF-IDF vectorizer."""
         for p in self.vect_candidates:
             try:
                 if p and os.path.exists(p):
                     self.vect = load_vectorizer(p)
-                    self.vect_path = p
-                    break
-            except Exception:
+                    print(f"Loaded vectorizer from {p}")
+                    return
+            except Exception as e:
                 continue
+        print("WARNING: Vectorizer not found. Predictions will fail.")
 
-        # prefer sklearn model if available, otherwise keras
+    def _load_sklearn_model(self):
+        """Load the sklearn model."""
         for p in self.skl_candidates:
             try:
                 if p and os.path.exists(p):
-                    self.model = load_model(p, backend='sklearn')
-                    self.skl_path = p
-                    self.backend = 'sklearn'
-                    break
-            except Exception:
+                    self.sklearn_model = load_model(p, backend='sklearn')
+                    print(f"Loaded sklearn model from {p}")
+                    return
+            except Exception as e:
                 continue
+        print("WARNING: Sklearn model not found.")
 
-        if self.model is None:
-            for p in self.keras_candidates:
-                try:
-                    if p and os.path.exists(p):
-                        self.model = load_model(p, backend='keras')
-                        self.keras_dir = p
-                        self.backend = 'keras'
-                        break
-                except Exception:
-                    continue
-
-    def _lazy_load(self):
-        """Attempt to load artifacts if not already loaded."""
-        if self.vect is None and os.path.exists(self.vect_path):
+    def _load_keras_model(self):
+        """Load the keras model."""
+        for p in self.keras_candidates:
             try:
-                self.vect = load_vectorizer(self.vect_path)
-            except Exception:
-                self.vect = None
+                if p and os.path.exists(p):
+                    self.keras_model = load_model(p, backend='keras')
+                    print(f"Loaded keras model from {p}")
+                    return
+            except Exception as e:
+                continue
+        print("WARNING: Keras model not found.")
 
-        if self.model is None:
-            try:
-                if os.path.exists(self.skl_path):
-                    self.model = load_model(self.skl_path, backend='sklearn')
-                    self.backend = 'sklearn'
-                elif os.path.exists(self.keras_dir):
-                    self.model = load_model(self.keras_dir, backend='keras')
-                    self.backend = 'keras'
-            except Exception:
-                self.model = None
-                self.backend = None
-
-    def predict(self, text: str, backend: Optional[str] = None) -> Tuple[Optional[int], Optional[float]]:
-        """Predict a single text string. If `backend` is provided it will be
-        used; otherwise the wrapper's detected backend is used.
+    def predict(self, text: str, backend: str = "sklearn") -> Tuple[Optional[int], Optional[float]]:
+        """Predict a single text string using specified backend.
+        
+        Args:
+            text: Input text to classify
+            backend: "sklearn" or "keras"
+            
+        Returns:
+            (label, probability) where label is 0/1 and probability is float [0,1]
         """
-        # Ensure artifacts are loaded
-        self._lazy_load()
+        if self.vect is None:
+            raise RuntimeError('Vectorizer not loaded. Run backend/train_models.py first.')
+        
+        # Select model based on backend
+        if backend == "sklearn":
+            if self.sklearn_model is None:
+                raise RuntimeError('Sklearn model not loaded. Run backend/train_models.py first.')
+            model = self.sklearn_model
+        elif backend == "keras":
+            if self.keras_model is None:
+                raise RuntimeError('Keras model not loaded. Run backend/train_models.py first.')
+            model = self.keras_model
+        else:
+            raise ValueError(f"Unknown backend: {backend}. Use 'sklearn' or 'keras'")
 
-        use_backend = backend or self.backend or 'sklearn'
-        if self.vect is None or self.model is None:
-            raise RuntimeError('Model or vectorizer not loaded. Ensure vect.joblib and model.joblib (or keras_model/) exist in the repo root.')
-
-        # Clean/preview the input text using the same preprocessing as the
-        # original Streamlit app so vectorizer receives the expected cleaned string.
+        # Clean/preview the input text
         try:
             cleaned, tokens = preview_text(text)
             proc_text = cleaned
         except Exception:
-            # fallback to original text if preview_text fails
             proc_text = text if isinstance(text, str) else str(text)
 
-        raw_label, raw_prob = predict_text(self.model, self.vect, proc_text, backend=use_backend)
+        # Make prediction
+        raw_label, raw_prob = predict_text(model, self.vect, proc_text, backend=backend)
 
-        # Normalize label to integer 0/1 when possible. The underlying model
-        # may return strings like 'positive'/'negative' or labels 0/1.
+        # Normalize label to integer (0=negative, 1=neutral, 2=positive)
         label = None
         if raw_label is None:
             label = None
-        elif isinstance(raw_label, (int,)):
+        elif isinstance(raw_label, (int, np.integer)):
             label = int(raw_label)
-        else:
-            # Try to interpret string labels
-            try:
-                # common textual labels
-                s = str(raw_label).lower()
-                if 'pos' in s:
-                    label = 1
-                elif 'neg' in s:
-                    label = 0
-                else:
-                    # fallback: try numeric conversion
+        elif isinstance(raw_label, str):
+            # Handle string labels like "negative", "neutral", "positive"
+            s = str(raw_label).lower()
+            if 'neg' in s:
+                label = 0
+            elif 'neu' in s:
+                label = 1
+            elif 'pos' in s:
+                label = 2
+            else:
+                try:
                     label = int(float(s))
+                except Exception:
+                    label = None
+        else:
+            try:
+                label = int(float(raw_label))
             except Exception:
-                # last resort: assign None
                 label = None
 
+        # Normalize probability
         prob = None
         try:
             if raw_prob is not None:

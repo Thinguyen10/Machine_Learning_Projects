@@ -27,8 +27,11 @@ class PredictRequest(BaseModel):
 
 
 class PredictResponse(BaseModel):
-    label: Optional[int]
+    label: Optional[int]  # 0=negative, 1=neutral, 2=positive
+    sentiment: Optional[str]  # "negative", "neutral", or "positive"
     probability: Optional[float]
+    backend: str
+    text: str
     backend: str
 
 
@@ -94,13 +97,51 @@ def transform(text: str):
 
 @app.get("/artifacts")
 def artifacts():
-    """Report which saved artifacts are present on disk."""
-    exists = {
-        'vect': True if os.path.exists('vect.joblib') else False,
-        'sklearn_model': True if os.path.exists('model.joblib') else False,
-        'keras_model': True if os.path.exists('keras_model') else False,
+    """Report which saved artifacts and trained models are present on disk."""
+    artifacts_info = {
+        'vectorizer': os.path.exists('vect.joblib') or os.path.exists('backend/vect.joblib'),
+        'sklearn_model': os.path.exists('model_sklearn.joblib') or os.path.exists('backend/model_sklearn.joblib') or os.path.exists('model.joblib') or os.path.exists('backend/model.joblib'),
+        'keras_model': os.path.exists('model_keras.keras') or os.path.exists('backend/model_keras.keras') or os.path.exists('model_keras') or os.path.exists('backend/model_keras') or os.path.exists('keras_model') or os.path.exists('backend/keras_model'),
     }
-    return exists
+    
+    # Load metrics if available
+    metrics = {}
+    for model_type in ['sklearn', 'keras']:
+        metrics_file = f'metrics_{model_type}.json'
+        if os.path.exists(metrics_file):
+            try:
+                import json
+                with open(metrics_file) as f:
+                    metrics[model_type] = json.load(f)
+            except:
+                pass
+        elif os.path.exists(f'backend/{metrics_file}'):
+            try:
+                import json
+                with open(f'backend/{metrics_file}') as f:
+                    metrics[model_type] = json.load(f)
+            except:
+                pass
+    
+    # Get vocab size and training info from vectorizer
+    vocab_size = None
+    training_samples = None
+    try:
+        if mw.vect is not None:
+            vocab_size = len(mw.vect.vocabulary_)
+            # Try to infer training samples from metrics
+            if 'sklearn' in metrics and 'report' in metrics['sklearn']:
+                training_samples = metrics['sklearn']['report'].get('weighted avg', {}).get('support')
+    except:
+        pass
+    
+    return {
+        'artifacts': artifacts_info,
+        'metrics': metrics,
+        'available_models': [k for k, v in artifacts_info.items() if k.endswith('_model') and v],
+        'vocab_size': vocab_size,
+        'training_samples': int(training_samples) if training_samples else None
+    }
 
 
 @app.post("/train", response_model=TrainResponse)
@@ -141,10 +182,47 @@ def train(req: TrainRequest):
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest):
+    """Predict sentiment using pre-trained models.
+    
+    Args:
+        text: Input text to classify
+        backend: "sklearn" (fast, accurate) or "keras" (neural network)
+    
+    Returns:
+        label: 0 (negative), 1 (neutral), or 2 (positive)
+        sentiment: "negative", "neutral", or "positive"
+        probability: Confidence score [0, 1]
+        backend: Which model was used
+        text: Original input text
+    """
     if not req.text or not req.text.strip():
         raise HTTPException(status_code=400, detail="`text` must be a non-empty string")
+    
+    backend_choice = req.backend or "sklearn"
+    if backend_choice not in ["sklearn", "keras"]:
+        raise HTTPException(status_code=400, detail="backend must be 'sklearn' or 'keras'")
+    
     try:
-        label, prob = mw.predict(req.text, backend=req.backend)
-        return PredictResponse(label=label, probability=prob, backend=req.backend)
+        label, prob = mw.predict(req.text, backend=backend_choice)
+        
+        if label is None:
+            raise HTTPException(status_code=500, detail="Model returned invalid prediction")
+        
+        # Map label to sentiment name
+        sentiment_map = {0: "negative", 1: "neutral", 2: "positive"}
+        sentiment = sentiment_map.get(label, "unknown")
+            
+        return PredictResponse(
+            label=label, 
+            sentiment=sentiment,
+            probability=prob, 
+            backend=backend_choice,
+            text=req.text
+        )
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"{str(e)} Please run 'python -m backend.train_models' to train models first."
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")

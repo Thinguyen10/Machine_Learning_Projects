@@ -1,124 +1,153 @@
-import React, { useState } from 'react'
-import { train, artifacts } from '../services/api'
+import React, { useState, useEffect } from 'react'
+import { artifacts } from '../services/api'
 
-export default function TrainingSection({ setArtifacts, setTrainMetrics }){
+export default function ModelSelector({ selectedBackend, onBackendChange }){
+  const [art, setArt] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [status, setStatus] = useState(null)
 
-  const handleTrain = async (backend='sklearn')=>{
+  useEffect(() => {
+    loadArtifacts()
+  }, [])
+
+  const loadArtifacts = async () => {
     setLoading(true)
-    setStatus({ loading: true, message: `Training ${backend} model...` })
-    try{
-      const res = await train({ backend })
-      setStatus({ success: true, metrics: res.metrics })
-      if(setTrainMetrics) setTrainMetrics(res.metrics)
-      // refresh artifacts
-      try{
-        const a = await artifacts()
-        if(setArtifacts) setArtifacts(a)
-      }catch(e){}
-    }catch(e){
-      setStatus({ success: false, error: e.message || String(e) })
-    }finally{
+    try {
+      const a = await artifacts()
+      setArt(a)
+    } catch(e) {
+      console.error('Failed to load artifacts:', e)
+    } finally {
       setLoading(false)
     }
   }
 
-  const checkArtifacts = async ()=>{
-    try{
-      const a = await artifacts()
-      setStatus({ artifacts: a })
-      if(setArtifacts) setArtifacts(a)
-    }catch(e){
-      setStatus({ success: false, error: e.message || String(e) })
-    }
-  }
+  const hasSklearn = art?.artifacts?.sklearn_model
+  const hasKeras = art?.artifacts?.keras_model
+  const availableModels = art?.available_models || []
 
   return (
     <section className="glass rounded-2xl p-6 hover-lift">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center text-white text-xl">
-          🎓
+          �
         </div>
-        <h3 className="text-xl font-bold text-gray-800">Train Model</h3>
+        <h3 className="text-xl font-bold text-gray-800">Model Selection</h3>
       </div>
       
-      <div className="grid grid-cols-3 gap-3">
-        <button 
-          className="px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          onClick={() => handleTrain('sklearn')} 
-          disabled={loading}
-        >
-          📊 Sklearn
-        </button>
-        <button 
-          className="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          onClick={() => handleTrain('keras')} 
-          disabled={loading}
-        >
-          🧠 Keras
-        </button>
-        <button 
-          className="px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
-          onClick={checkArtifacts}
-        >
-          🔍 Check
-        </button>
-      </div>
+      <p className="text-sm text-gray-600 mb-4">
+        Choose which pre-trained model to use for predictions. Both models are trained on the same data with optimized hyperparameters.
+      </p>
 
-      {status && (
-        <div className="mt-4">
-          {status.loading && (
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl animate-spin">⚙️</span>
-                <span className="font-semibold text-blue-700">{status.message}</span>
-              </div>
-            </div>
-          )}
-          
-          {status.error && (
-            <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-xl">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">❌</span>
-                <div>
-                  <div className="font-bold text-red-800">Error</div>
-                  <div className="text-red-600 text-sm">{status.error}</div>
+      <div className="space-y-3">
+        {/* Sklearn Model */}
+        <button
+          onClick={() => onBackendChange('sklearn')}
+          disabled={!hasSklearn}
+          className={`w-full p-4 rounded-xl text-left transition-all ${
+            selectedBackend === 'sklearn'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg scale-105'
+              : hasSklearn
+              ? 'bg-white border-2 border-gray-200 hover:border-green-300 hover:shadow-md'
+              : 'bg-gray-100 border-2 border-gray-200 opacity-50 cursor-not-allowed'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📊</span>
+              <div>
+                <div className="font-bold">Sklearn (LogisticRegression)</div>
+                <div className={`text-sm ${selectedBackend === 'sklearn' ? 'text-green-100' : 'text-gray-600'}`}>
+                  Fast, accurate, optimized with GridSearchCV
                 </div>
               </div>
             </div>
-          )}
-          
-          {status.metrics && (
-            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">✅</span>
-                <span className="font-bold text-green-800">Training Complete!</span>
-              </div>
-              <div className="bg-white/60 p-3 rounded-lg">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Metrics:</div>
-                <pre className="text-xs bg-gray-50 p-3 rounded border border-gray-200 overflow-x-auto">
-                  {JSON.stringify(status.metrics, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
-          
-          {status.artifacts && (
-            <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">📦</span>
-                <span className="font-bold text-purple-800">Artifacts Loaded</span>
-              </div>
-              <div className="bg-white/60 p-3 rounded-lg">
-                <pre className="text-xs bg-gray-50 p-3 rounded border border-gray-200 overflow-x-auto">
-                  {JSON.stringify(status.artifacts, null, 2)}
-                </pre>
+            {selectedBackend === 'sklearn' && <span className="text-2xl">✓</span>}
+            {!hasSklearn && <span className="text-sm text-red-500">Not trained</span>}
+          </div>
+          {hasSklearn && art?.metrics?.sklearn && (
+            <div className="mt-3 pt-3 border-t border-white/30">
+              <div className="text-sm grid grid-cols-2 gap-2">
+                <div className={selectedBackend === 'sklearn' ? 'text-green-100' : 'text-gray-600'}>
+                  Accuracy: <span className="font-bold">{(art.metrics.sklearn.accuracy * 100).toFixed(2)}%</span>
+                </div>
+                {art.metrics.sklearn.best_params?.C && (
+                  <div className={selectedBackend === 'sklearn' ? 'text-green-100' : 'text-gray-600'}>
+                    C: <span className="font-bold">{art.metrics.sklearn.best_params.C}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
+        </button>
+
+        {/* Keras Model */}
+        <button
+          onClick={() => onBackendChange('keras')}
+          disabled={!hasKeras}
+          className={`w-full p-4 rounded-xl text-left transition-all ${
+            selectedBackend === 'keras'
+              ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105'
+              : hasKeras
+              ? 'bg-white border-2 border-gray-200 hover:border-purple-300 hover:shadow-md'
+              : 'bg-gray-100 border-2 border-gray-200 opacity-50 cursor-not-allowed'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🧠</span>
+              <div>
+                <div className="font-bold">Keras (Neural Network)</div>
+                <div className={`text-sm ${selectedBackend === 'keras' ? 'text-purple-100' : 'text-gray-600'}`}>
+                  Deep learning, multi-layer architecture
+                </div>
+              </div>
+            </div>
+            {selectedBackend === 'keras' && <span className="text-2xl">✓</span>}
+            {!hasKeras && <span className="text-sm text-red-500">Not trained</span>}
+          </div>
+          {hasKeras && art?.metrics?.keras && (
+            <div className="mt-3 pt-3 border-t border-white/30">
+              <div className="text-sm grid grid-cols-2 gap-2">
+                <div className={selectedBackend === 'keras' ? 'text-purple-100' : 'text-gray-600'}>
+                  Accuracy: <span className="font-bold">{(art.metrics.keras.accuracy * 100).toFixed(2)}%</span>
+                </div>
+                {art.metrics.keras.epochs_trained && (
+                  <div className={selectedBackend === 'keras' ? 'text-purple-100' : 'text-gray-600'}>
+                    Epochs: <span className="font-bold">{art.metrics.keras.epochs_trained}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </button>
+      </div>
+
+      {/* Status */}
+      {!hasSklearn && !hasKeras && (
+        <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <div className="font-bold text-yellow-800">Models Not Found</div>
+              <div className="text-sm text-yellow-700 mt-1">
+                Please train the models first by running:<br/>
+                <code className="bg-yellow-100 px-2 py-1 rounded mt-1 inline-block">
+                  python -m backend.train_models
+                </code>
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Refresh button */}
+      <button
+        onClick={loadArtifacts}
+        disabled={loading}
+        className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 transition-all"
+      >
+        {loading ? '🔄 Checking...' : '🔄 Refresh Model Status'}
+      </button>
     </section>
   )
 }

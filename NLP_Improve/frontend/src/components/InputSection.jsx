@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { predict, transform } from '../services/api'
 
-export default function InputSection({ text, setText, onResult }){
+export default function InputSection({ text, setText, onResult, selectedBackend }){
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState(null)
 
   const handleAnalyze = async ()=>{
     setLoading(true)
     try{
-      const res = await predict(text)
+      const res = await predict(text, selectedBackend)
       onResult(res)
     }catch(e){
       onResult({ error: e.message || String(e) })

@@ -5,13 +5,12 @@ import InputSection from './components/InputSection'
 import ResultsSection from './components/ResultsSection'
 import ExamplesSection from './components/ExamplesSection'
 import InfoSection from './components/InfoSection'
-import TrainingSection from './components/TrainingSection'
+import ModelSelector from './components/TrainingSection'
 
 function App(){
   const [result, setResult] = useState(null)
   const [text, setText] = useState('')
-  const [artifacts, setArtifacts] = useState(null)
-  const [trainMetrics, setTrainMetrics] = useState(null)
+  const [selectedBackend, setSelectedBackend] = useState('sklearn')
 
   return (
     <div className="min-h-screen py-8">
@@ -22,13 +21,21 @@ function App(){
 
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <InputSection text={text} setText={setText} onResult={setResult} />
+              <InputSection 
+                text={text} 
+                setText={setText} 
+                onResult={setResult} 
+                selectedBackend={selectedBackend}
+              />
               <ExamplesSection onPick={setText} />
             </div>
 
             <div className="space-y-6">
+              <ModelSelector 
+                selectedBackend={selectedBackend}
+                onBackendChange={setSelectedBackend}
+              />
               <ResultsSection result={result} />
-              <TrainingSection setArtifacts={setArtifacts} setTrainMetrics={setTrainMetrics} />
               <InfoSection />
             </div>
           </section>
