@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { artifacts } from '../services/api'
 
-export default function FrontPage(){
+export default function FrontPage({ onLearnMore }){
   const [art, setArt] = useState(null)
   const [showDetails, setShowDetails] = useState(false)
 
@@ -31,18 +31,31 @@ export default function FrontPage(){
             </p>
             <div className="grid grid-cols-3 gap-4 mt-6">
               <div className="bg-white/60 p-4 rounded-xl text-center">
-                <div className="text-2xl font-bold text-purple-600">95%+</div>
+                <div className="text-2xl font-bold text-purple-600">68%</div>
                 <div className="text-sm text-gray-600 mt-1">Accuracy</div>
               </div>
               <div className="bg-white/60 p-4 rounded-xl text-center">
                 <div className="text-2xl font-bold text-blue-600">3x</div>
-                <div className="text-sm text-gray-600 mt-1">Faster Training</div>
+                <div className="text-sm text-gray-600 mt-1">Faster Response</div>
               </div>
               <div className="bg-white/60 p-4 rounded-xl text-center">
-                <div className="text-2xl font-bold text-pink-600">TF-IDF</div>
-                <div className="text-sm text-gray-600 mt-1">Vectorization</div>
+                <div className="text-2xl font-bold text-pink-600">Dual</div>
+                <div className="text-sm text-gray-600 mt-1">Models</div>
               </div>
             </div>
+            
+            {/* Learn More Button */}
+            {onLearnMore && (
+              <div className="mt-6">
+                <button
+                  onClick={onLearnMore}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 px-6 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  <span>📖 Learn About Improvements & Future Enhancements</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -75,8 +88,8 @@ export default function FrontPage(){
             <li className="flex items-start gap-3">
               <span className="text-blue-500 text-xl">•</span>
               <div>
-                <div className="font-semibold text-gray-800">Binary Classification</div>
-                <div className="text-sm text-gray-600">Sigmoid activation for sentiment prediction</div>
+                <div className="font-semibold text-gray-800">Multi-Class Classification</div>
+                <div className="text-sm text-gray-600">3-class sentiment: Negative, Neutral, Positive</div>
               </div>
             </li>
           </ul>

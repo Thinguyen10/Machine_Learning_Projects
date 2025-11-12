@@ -6,18 +6,25 @@ import ResultsSection from './components/ResultsSection'
 import ExamplesSection from './components/ExamplesSection'
 import InfoSection from './components/InfoSection'
 import ModelSelector from './components/TrainingSection'
+import ImprovementsPage from './components/ImprovementsPage'
 
 function App(){
   const [result, setResult] = useState(null)
   const [text, setText] = useState('')
   const [selectedBackend, setSelectedBackend] = useState('sklearn')
+  const [showImprovements, setShowImprovements] = useState(false)
+
+  // If showing improvements page, render it instead
+  if (showImprovements) {
+    return <ImprovementsPage onBack={() => setShowImprovements(false)} />
+  }
 
   return (
     <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Header />
         <main className="space-y-8">
-          <FrontPage />
+          <FrontPage onLearnMore={() => setShowImprovements(true)} />
 
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
