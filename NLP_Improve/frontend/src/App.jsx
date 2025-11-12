@@ -13,6 +13,7 @@ function App(){
   const [text, setText] = useState('')
   const [selectedBackend, setSelectedBackend] = useState('sklearn')
   const [showImprovements, setShowImprovements] = useState(false)
+  const [showTesting, setShowTesting] = useState(false)
 
   // If showing improvements page, render it instead
   if (showImprovements) {
@@ -24,28 +25,50 @@ function App(){
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Header />
         <main className="space-y-8">
-          <FrontPage onLearnMore={() => setShowImprovements(true)} />
+          {/* Show FrontPage if not in testing mode */}
+          {!showTesting && (
+            <FrontPage 
+              onLearnMore={() => setShowImprovements(true)}
+              onStartTesting={() => setShowTesting(true)}
+            />
+          )}
 
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <InputSection 
-                text={text} 
-                setText={setText} 
-                onResult={setResult} 
-                selectedBackend={selectedBackend}
-              />
-              <ExamplesSection onPick={setText} />
-            </div>
+          {/* Show Testing Interface if in testing mode */}
+          {showTesting && (
+            <>
+              {/* Back to Home Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowTesting(false)}
+                  className="glass px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 text-gray-700 hover:text-purple-600 font-semibold"
+                >
+                  <span className="text-xl">←</span>
+                  Back to Home
+                </button>
+              </div>
 
-            <div className="space-y-6">
-              <ModelSelector 
-                selectedBackend={selectedBackend}
-                onBackendChange={setSelectedBackend}
-              />
-              <ResultsSection result={result} />
-              <InfoSection />
-            </div>
-          </section>
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <InputSection 
+                    text={text} 
+                    setText={setText} 
+                    onResult={setResult} 
+                    selectedBackend={selectedBackend}
+                  />
+                  <ExamplesSection onPick={setText} />
+                </div>
+
+                <div className="space-y-6">
+                  <ModelSelector 
+                    selectedBackend={selectedBackend}
+                    onBackendChange={setSelectedBackend}
+                  />
+                  <ResultsSection result={result} />
+                  <InfoSection />
+                </div>
+              </section>
+            </>
+          )}
         </main>
 
         {/* Footer */}
