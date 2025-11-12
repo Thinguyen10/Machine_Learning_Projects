@@ -117,6 +117,8 @@ This creates:
 
 **Training takes 2-3 minutes and achieves 68% accuracy on both models.**
 
+## EXECUTE THE APP
+
 ### 3. Start Backend
 
 ```bash
