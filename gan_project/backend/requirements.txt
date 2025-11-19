@@ -1,0 +1,18 @@
+# Backend Python Dependencies
+
+# Web Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Machine Learning
+numpy>=1.21.0
+tensorflow>=2.10.0
+Pillow>=9.0.0
+
+# Visualization
+matplotlib>=3.4.0
+
+# Utilities
+python-dotenv==1.0.0
+pydantic==2.5.0
