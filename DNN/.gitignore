@@ -5,23 +5,17 @@ venv/
 env/
 ENV/
 
-# ALL Model Files (2GB+)
+# Model files (uploaded to Hugging Face instead)
 outputs/rnn_sentiment_model.pt
-outputs/rnn_checkpoints/
-outputs/transformer/
-outputs/*.pt
-outputs/*.pth
-outputs/*.safetensors
-*.pt
-*.pth
-*.safetensors
-
-# Training checkpoints (1.5GB+)
+outputs/rnn_checkpoints/best_model.pt
+outputs/transformer/model.safetensors
 outputs/transformer/checkpoint-*/
-outputs/transformer/*.bin
+
+# Other large files
 outputs/transformer/optimizer.pt
-outputs/transformer/pytorch_model.bin
 outputs/transformer/training_args.bin
+outputs/*.db
+*.db
 
 # Raw training data (600MB+)
 model_training/data/raw/

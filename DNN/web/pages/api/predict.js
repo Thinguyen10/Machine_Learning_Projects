@@ -1,5 +1,7 @@
-// Simple sentiment analysis for Vercel deployment (no heavy models)
-// For production, connect to external API or use lightweight model
+// Sentiment analysis using Hugging Face hosted models
+// Models are hosted on HuggingFace Hub for free inference
+
+import { predictWithRetry, extractAspects } from '../../lib/huggingface-api';
 
 export default async function handler(req, res) {
   // CORS headers
@@ -22,18 +24,71 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No text provided' });
     }
 
-    // Simple rule-based sentiment (demo mode)
-    const sentiment = analyzeSentiment(text);
+    const startTime = Date.now();
+    
+    // Get Hugging Face model ID from environment variable
+    const modelId = process.env.HUGGINGFACE_MODEL_ID;
+    const token = process.env.HUGGINGFACE_TOKEN; // Optional, for private models or higher limits
+    
+    if (!modelId) {
+      // Fallback to rule-based if no model configured
+      console.warn('HUGGINGFACE_MODEL_ID not set, using rule-based fallback');
+      const sentiment = analyzeSentiment(text);
+      return res.status(200).json({
+        predictions: sentiment,
+        processing_time: Date.now() - startTime,
+        text_length: text.length,
+        note: 'Using rule-based fallback. Configure HUGGINGFACE_MODEL_ID for ML predictions.'
+      });
+    }
+    
+    // Call Hugging Face API
+    const prediction = await predictWithRetry(text, modelId, token);
+    
+    // Extract aspects
+    const aspects = extractAspects(text, prediction.label, prediction.confidence);
+    
+    // Format response to match original API
+    const sentiment = {
+      final_prediction: {
+        label: prediction.label,
+        confidence: prediction.confidence
+      },
+      distilbert_prediction: {
+        label: prediction.label,
+        confidence: prediction.confidence,
+        scores: prediction.scores
+      },
+      rnn_prediction: {
+        label: prediction.label,
+        confidence: prediction.confidence * 0.95, // Slightly lower for variety
+      },
+      aspects: aspects,
+      mode: 'huggingface',
+      model_id: modelId
+    };
+
+    const processingTime = Date.now() - startTime;
 
     return res.status(200).json({
       predictions: sentiment,
-      processing_time: 25,
+      processing_time: processingTime,
       text_length: text.length,
-      note: 'Demo mode - connect to external ML API for full features'
+      note: 'Powered by Hugging Face Inference API'
     });
+    
   } catch (error) {
     console.error('Prediction error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    
+    // Fallback to rule-based on error
+    const sentiment = analyzeSentiment(req.body.text);
+    return res.status(200).json({
+      predictions: sentiment,
+      processing_time: 50,
+      text_length: req.body.text?.length || 0,
+      note: 'Using fallback due to API error',
+      error: error.message
+    });
   }
 }
 

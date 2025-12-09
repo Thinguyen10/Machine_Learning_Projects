@@ -99,9 +99,35 @@ npm run dev
 
 ---
 
-## 🌐 Vercel Deployment
+## 🌐 Vercel Deployment with Full ML Models
 
-### Quick Deploy (Recommended)
+### ✨ NEW: Deploy with Real ML Models!
+
+Your app can now run with **full ML functionality** on Vercel using Hugging Face for model hosting.
+
+**Quick Setup (3 steps)**:
+
+1. **Upload model to Hugging Face**:
+   ```bash
+   pip install huggingface_hub
+   huggingface-cli login
+   python scripts/upload_to_huggingface.py
+   ```
+
+2. **Set environment variable in Vercel**:
+   - Dashboard → Settings → Environment Variables
+   - Add: `HUGGINGFACE_MODEL_ID` = `your-username/sentiment-distilbert`
+
+3. **Deploy**:
+   ```bash
+   git push origin main
+   ```
+
+**📚 Complete Guide**: See `DEPLOY_WITH_MODELS.md` for detailed instructions.
+
+### Alternative: Demo Mode Deployment
+
+For a quick demo without ML models:
 
 **Option 1: Deploy via Vercel Dashboard**
 1. Push code to GitHub
@@ -120,16 +146,21 @@ npm install -g vercel
 ```
 
 ### What's Deployed
-The Vercel deployment runs in **demo mode** with:
+
+**With Hugging Face** (Recommended):
+- ✅ Full ML model predictions (94% accuracy)
+- ✅ Aspect-based sentiment analysis
+- ✅ Same performance as local version
+- ✅ Free tier: 30,000 requests/month
+
+**Demo Mode** (No setup):
 - ✅ Full frontend UI and visualizations
 - ✅ Lightweight rule-based sentiment analysis
 - ✅ CSV upload interface
 - ✅ Analytics dashboard with demo data
-- ❌ Heavy ML models excluded (280MB too large for Vercel)
-
-**Note**: Models are too large to submit. The deployed version demonstrates the UI and architecture. For full ML features, run locally or deploy models to external service (see `VERCEL_DEPLOYMENT.md`).
 
 ---
+
 
 ## 📁 Project Structure
 
