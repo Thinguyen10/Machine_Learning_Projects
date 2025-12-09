@@ -1,6 +1,9 @@
 // Sentiment analysis using Hugging Face hosted models
 // Models are hosted on HuggingFace Hub for free inference
 
+// Import fetch for Node.js compatibility
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
 async function predictWithHuggingFace(text, modelId, token = null) {
