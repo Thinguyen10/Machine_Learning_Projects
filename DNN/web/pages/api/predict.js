@@ -1,7 +1,63 @@
 // Sentiment analysis using Hugging Face hosted models
 // Models are hosted on HuggingFace Hub for free inference
 
-import { predictWithRetry, extractAspects } from '../../lib/huggingface-api';
+const HF_API_URL = 'https://api-inference.huggingface.co/models';
+
+async function predictWithHuggingFace(text, modelId, token = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const response = await fetch(`${HF_API_URL}/${modelId}`, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({ inputs: text }),
+  });
+  
+  if (!response.ok) {
+    if (response.status === 503) {
+      return { loading: true, message: 'Model is loading... Try again in 20 seconds.' };
+    }
+    throw new Error(`HuggingFace API error: ${response.status}`);
+  }
+  
+  const result = await response.json();
+  const predictions = Array.isArray(result[0]) ? result[0] : result;
+  
+  const labelMap = { 'LABEL_0': 'negative', 'LABEL_1': 'positive' };
+  let positiveScore = 0, negativeScore = 0;
+  
+  predictions.forEach(pred => {
+    const sentiment = labelMap[pred.label] || pred.label.toLowerCase();
+    if (sentiment === 'positive') positiveScore = pred.score;
+    else if (sentiment === 'negative') negativeScore = pred.score;
+  });
+  
+  return {
+    label: positiveScore > negativeScore ? 'positive' : 'negative',
+    confidence: Math.max(positiveScore, negativeScore),
+    scores: { positive: positiveScore, negative: negativeScore }
+  };
+}
+
+function extractAspects(text, overallSentiment, confidence) {
+  const textLower = text.toLowerCase();
+  const aspectKeywords = {
+    'food': ['food', 'meal', 'dish', 'taste', 'flavor'],
+    'service': ['service', 'staff', 'waiter', 'employee'],
+    'price': ['price', 'cost', 'expensive', 'cheap', 'value'],
+    'quality': ['quality', 'fresh', 'clean'],
+    'ambiance': ['atmosphere', 'ambiance', 'decor'],
+  };
+  
+  const aspects = [];
+  for (const [aspect, keywords] of Object.entries(aspectKeywords)) {
+    const mentions = keywords.filter(kw => textLower.includes(kw)).length;
+    if (mentions > 0) {
+      aspects.push({ aspect, sentiment: overallSentiment, confidence, mentions });
+    }
+  }
+  return aspects;
+}
 
 export default async function handler(req, res) {
   // CORS headers
@@ -43,7 +99,15 @@ export default async function handler(req, res) {
     }
     
     // Call Hugging Face API
-    const prediction = await predictWithRetry(text, modelId, token);
+    const prediction = await predictWithHuggingFace(text, modelId, token);
+    
+    if (prediction.loading) {
+      return res.status(503).json({
+        error: 'Model is loading',
+        message: prediction.message,
+        estimatedTime: 20
+      });
+    }
     
     // Extract aspects
     const aspects = extractAspects(text, prediction.label, prediction.confidence);

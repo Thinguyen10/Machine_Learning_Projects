@@ -9,6 +9,9 @@
 
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
+// Use native fetch or node-fetch depending on environment
+const fetchFunc = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+
 /**
  * Call Hugging Face Inference API for sentiment analysis
  * 
@@ -28,7 +31,7 @@ export async function predictWithHuggingFace(text, modelId, token = null) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(`${HF_API_URL}/${modelId}`, {
+    const response = await fetchFunc(`${HF_API_URL}/${modelId}`, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ inputs: text }),
