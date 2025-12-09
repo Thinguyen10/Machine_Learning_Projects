@@ -1,15 +1,15 @@
 // Batch upload API using Hugging Face for predictions
 
-// Import fetch for Node.js compatibility
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
 async function predictWithHuggingFace(text, modelId, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
-  const response = await fetch(`${HF_API_URL}/${modelId}`, {
+  // Use global fetch (available in Node 18+) or import dynamically  
+  const fetchFn = global.fetch || (await import('node-fetch')).default;
+  
+  const response = await fetchFn(`${HF_API_URL}/${modelId}`, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify({ inputs: text }),

@@ -1,9 +1,6 @@
 // Sentiment analysis using Hugging Face hosted models
 // Models are hosted on HuggingFace Hub for free inference
 
-// Import fetch for Node.js compatibility
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
 async function predictWithHuggingFace(text, modelId, token = null) {
@@ -12,7 +9,10 @@ async function predictWithHuggingFace(text, modelId, token = null) {
   
   console.log('Calling HuggingFace API for model:', modelId);
   
-  const response = await fetch(`${HF_API_URL}/${modelId}`, {
+  // Use global fetch (available in Node 18+) or import dynamically
+  const fetchFn = global.fetch || (await import('node-fetch')).default;
+  
+  const response = await fetchFn(`${HF_API_URL}/${modelId}`, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify({ inputs: text }),
