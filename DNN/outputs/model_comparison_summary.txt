@@ -1,0 +1,34 @@
+MODEL COMPARISON SUMMARY
+================================================================================
+
+RNN (LSTM + Attention)
+--------------------------------------------------------------------------------
+  Test Accuracy:  0.8756
+  Precision:      0.8920
+  Recall:         0.8756
+  F1 Score:       0.8798
+
+  Hyperparameters:
+    embedding_dim: 100
+    hidden_dim: 128
+    n_layers: 2
+    dropout: 0.5
+    batch_size: 32
+    learning_rate: 0.001
+    epochs: 20
+
+DistilBERT (Transformer)
+--------------------------------------------------------------------------------
+  Test Accuracy:  0.9422
+  Precision:      0.9422
+  Recall:         0.9422
+  F1 Score:       0.9422
+
+  Hyperparameters:
+    max_length: 256
+    batch_size: 16
+    learning_rate: 2e-05
+    epochs: 4
+    warmup_steps: 500
+    weight_decay: 0.01
+
