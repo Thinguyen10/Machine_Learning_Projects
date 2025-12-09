@@ -108,6 +108,18 @@ export default async function handler(req, res) {
     
     const successCount = results.filter(r => !r.error).length;
 
+    // Store results for dashboard (using Vercel KV would be better for production)
+    const analysisResults = results.map(r => ({
+      text: r.text,
+      sentiment: r.prediction?.label || 'error',
+      confidence: r.prediction?.confidence || 0,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Save to global variable that dashboard can read
+    // Note: In production, use a real database (Vercel KV, MongoDB, etc.)
+    global.lastBatchResults = analysisResults;
+
     return res.status(200).json({
       message: 'Batch upload completed',
       filename: filename || 'upload.csv',
@@ -115,7 +127,8 @@ export default async function handler(req, res) {
       processed: successCount,
       previewed: limitedTexts.length,
       results: results,
-      note: `Processed first ${limitedTexts.length} rows. For full batch processing, use dedicated backend.`,
+      stored_count: analysisResults.length,
+      note: `Processed first ${limitedTexts.length} rows. Results visible in dashboard.`,
       success: true
     });
     

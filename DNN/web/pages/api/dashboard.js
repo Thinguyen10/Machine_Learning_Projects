@@ -1,18 +1,46 @@
-// Mock dashboard data API for Vercel deployment
+// Dashboard data API for Vercel deployment
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Return demo data
+  // Check if we have real batch results
+  const batchResults = global.lastBatchResults || [];
+  
+  if (batchResults.length > 0) {
+    // Calculate real statistics from uploaded data
+    const positiveCount = batchResults.filter(r => r.sentiment === 'positive').length;
+    const negativeCount = batchResults.filter(r => r.sentiment === 'negative').length;
+    const neutralCount = batchResults.length - positiveCount - negativeCount;
+    const total = batchResults.length;
+
+    return res.status(200).json({
+      statistics: {
+        total_reviews: total,
+        positive_count: positiveCount,
+        negative_count: negativeCount,
+        neutral_count: neutralCount,
+        positive_percentage: ((positiveCount / total) * 100).toFixed(2),
+        negative_percentage: ((negativeCount / total) * 100).toFixed(2),
+        neutral_percentage: ((neutralCount / total) * 100).toFixed(2)
+      },
+      trends: [],
+      top_aspects: [],
+      reviews: batchResults.slice(0, 10),
+      data_source: 'uploaded_batch',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Return demo data if no uploads yet
   const demoData = {
     statistics: {
       total_reviews: 245,
