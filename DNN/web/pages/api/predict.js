@@ -123,13 +123,28 @@ export default async function handler(req, res) {
     }
     
     // Call Hugging Face API
-    const prediction = await predictWithHuggingFace(text, modelId, token);
-    
-    if (prediction.loading) {
-      return res.status(503).json({
-        error: 'Model is loading',
-        message: prediction.message,
-        estimatedTime: 20
+    let prediction;
+    try {
+      prediction = await predictWithHuggingFace(text, modelId, token);
+      
+      if (prediction.loading) {
+        return res.status(503).json({
+          error: 'Model is loading',
+          message: prediction.message,
+          estimatedTime: 20
+        });
+      }
+    } catch (hfError) {
+      console.error('HuggingFace API failed:', hfError.message);
+      // If HF API fails (auth, rate limit, etc), fall back to rule-based
+      console.warn('Falling back to rule-based analysis due to HF error');
+      const sentiment = analyzeSentiment(text);
+      return res.status(200).json({
+        predictions: sentiment,
+        processing_time: Date.now() - startTime,
+        text_length: text.length,
+        note: 'Using rule-based fallback due to HuggingFace API error. May need authentication token.',
+        error: hfError.message
       });
     }
     
