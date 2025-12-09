@@ -7,20 +7,28 @@ async function predictWithHuggingFace(text, modelId, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   
+  console.log('Calling HuggingFace API for model:', modelId);
+  
   const response = await fetch(`${HF_API_URL}/${modelId}`, {
     method: 'POST',
     headers: headers,
     body: JSON.stringify({ inputs: text }),
   });
   
+  console.log('HuggingFace API status:', response.status);
+  
   if (!response.ok) {
     if (response.status === 503) {
       return { loading: true, message: 'Model is loading... Try again in 20 seconds.' };
     }
-    throw new Error(`HuggingFace API error: ${response.status}`);
+    const errorText = await response.text();
+    console.error('HuggingFace API error:', response.status, errorText);
+    throw new Error(`HuggingFace API error: ${response.status} - ${errorText}`);
   }
   
   const result = await response.json();
+  console.log('HuggingFace API result:', JSON.stringify(result).substring(0, 200));
+  
   const predictions = Array.isArray(result[0]) ? result[0] : result;
   
   const labelMap = { 'LABEL_0': 'negative', 'LABEL_1': 'positive' };
@@ -86,6 +94,9 @@ export default async function handler(req, res) {
     const modelId = process.env.HUGGINGFACE_MODEL_ID;
     const token = process.env.HUGGINGFACE_TOKEN; // Optional, for private models or higher limits
     
+    console.log('Model ID:', modelId ? 'Set' : 'Not set');
+    console.log('Environment:', process.env.NODE_ENV);
+    
     if (!modelId) {
       // Fallback to rule-based if no model configured
       console.warn('HUGGINGFACE_MODEL_ID not set, using rule-based fallback');
@@ -94,7 +105,7 @@ export default async function handler(req, res) {
         predictions: sentiment,
         processing_time: Date.now() - startTime,
         text_length: text.length,
-        note: 'Using rule-based fallback. Configure HUGGINGFACE_MODEL_ID for ML predictions.'
+        note: 'Using rule-based fallback. Configure HUGGINGFACE_MODEL_ID in Vercel for ML predictions.'
       });
     }
     
