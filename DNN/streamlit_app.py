@@ -136,7 +136,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Model configuration
-MODEL_ID = "Thi144/sentiment-distilbert"
+MODEL_ID = "Thi144/sentiment-distilbert-7class"  # 7-class model (-3 to +3)
+# Alternative: Use local path if model not uploaded yet
+# MODEL_ID = "./outputs/transformer_7class"
+
+# Class mapping for 7-class model
+CLASS_LABELS = {
+    0: {'scale': -3, 'label': 'negative', 'name': 'Very Negative'},
+    1: {'scale': -2, 'label': 'negative', 'name': 'Negative'},
+    2: {'scale': -1, 'label': 'neutral', 'name': 'Slightly Negative'},
+    3: {'scale': 0, 'label': 'neutral', 'name': 'Neutral'},
+    4: {'scale': 1, 'label': 'neutral', 'name': 'Slightly Positive'},
+    5: {'scale': 2, 'label': 'positive', 'name': 'Positive'},
+    6: {'scale': 3, 'label': 'positive', 'name': 'Very Positive'}
+}
 
 @st.cache_resource
 def load_model():
@@ -149,107 +162,53 @@ def load_model():
 
 def analyze_text(text, tokenizer, model):
     """
-    Analyze sentiment using ML model with learned neutral detection.
+    Analyze sentiment using 7-class model (-3 to +3 scale).
     
-    Approach: Use the model's uncertainty as a natural signal for neutral sentiment.
-    When the model is uncertain between positive/negative (scores close to 50/50),
-    it indicates the text has mixed or neutral sentiment - the model naturally
-    learned this pattern from the data.
+    Model outputs 7 classes representing sentiment intensity:
+    -3: Very Negative, -2: Negative, -1: Slightly Negative
+     0: Neutral
+    +1: Slightly Positive, +2: Positive, +3: Very Positive
     
-    This is better than keyword matching because:
-    1. Model learns contextual patterns (e.g., "decent but predictable")
-    2. Handles subtle language the model was trained on
-    3. No manual rules - learned from actual examples
+    This provides nuanced sentiment analysis learned from data.
     """
     if not text or len(text.strip()) < 3:
         return {
             "label": "neutral",
+            "scale": 0,
             "confidence": 0.5,
-            "positive_score": 0.33,
-            "negative_score": 0.33,
-            "neutral_score": 0.34
+            "class_name": "Neutral",
+            "positive_score": 0.14,
+            "negative_score": 0.14,
+            "neutral_score": 0.72,
+            "all_scores": [0.14, 0.14, 0.14, 0.44, 0.14, 0.0, 0.0]
         }
     
-    # Get model predictions
+    # Get model predictions for 7 classes
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512, padding=True)
     
     with torch.no_grad():
         outputs = model(**inputs)
         logits = outputs.logits
-        predictions = torch.nn.functional.softmax(logits, dim=-1)
+        probabilities = torch.nn.functional.softmax(logits, dim=-1)[0]
     
-    negative_score = predictions[0][0].item()
-    positive_score = predictions[0][1].item()
+    # Get predicted class (0-6)
+    predicted_class = torch.argmax(probabilities).item()
+    class_info = CLASS_LABELS[predicted_class]
     
-    # Calculate model uncertainty metrics
-    score_diff = abs(positive_score - negative_score)
-    max_score = max(positive_score, negative_score)
-    entropy = -(positive_score * torch.log2(torch.tensor(positive_score + 1e-10)) + 
-                negative_score * torch.log2(torch.tensor(negative_score + 1e-10))).item()
-    
-    # ML-based neutral detection using model's natural uncertainty
-    # When model can't decide confidently between pos/neg, it's likely neutral
-    
-    # Three natural signals from the model:
-    # 1. Low score difference (model sees both positive and negative signals)
-    # 2. High entropy (maximum uncertainty = 1.0, indicates confusion)
-    # 3. Both scores in middle range (not strongly positive or negative)
-    
-    uncertainty_threshold = 0.7  # Entropy closer to 1.0 means more uncertain
-    score_diff_threshold = 0.35  # Scores closer than 35% indicates mixed sentiment
-    middle_range_min = 0.35
-    middle_range_max = 0.65
-    
-    # Neutral if model shows high uncertainty through multiple signals
-    is_neutral = False
-    confidence_penalty = 0
-    
-    if entropy > uncertainty_threshold:
-        # Model is very uncertain - strong signal for neutral
-        is_neutral = True
-        confidence_penalty = 0.1
-    
-    if score_diff < score_diff_threshold:
-        # Scores are close - model sees mixed sentiment
-        if not is_neutral:
-            is_neutral = True
-            confidence_penalty = 0.15
-        else:
-            confidence_penalty = 0.2  # Both signals agree
-    
-    if (middle_range_min <= positive_score <= middle_range_max and 
-        middle_range_min <= negative_score <= middle_range_max):
-        # Both in middle - not strongly either way
-        if not is_neutral:
-            is_neutral = True
-            confidence_penalty = 0.1
-        else:
-            confidence_penalty = max(confidence_penalty, 0.25)
-    
-    # Calculate final scores
-    if is_neutral:
-        # Neutral detected by model's learned patterns
-        neutral_score = min(0.95, max(0.55, 1.0 - score_diff + confidence_penalty))
-        label = "neutral"
-        confidence = neutral_score
-        
-        # Redistribute positive/negative to sum to ~1.0 with neutral
-        scale = (1.0 - neutral_score) / (positive_score + negative_score)
-        positive_score = positive_score * scale
-        negative_score = negative_score * scale
-    else:
-        # Clear positive or negative
-        label = "positive" if positive_score > negative_score else "negative"
-        confidence = max_score
-        neutral_score = max(0.05, min(0.45, 1.0 - confidence))
+    # Aggregate scores for display (negative/neutral/positive)
+    negative_score = probabilities[0:2].sum().item()  # Classes 0-1 (-3, -2)
+    neutral_score = probabilities[2:5].sum().item()   # Classes 2-4 (-1, 0, +1)
+    positive_score = probabilities[5:7].sum().item()  # Classes 5-6 (+2, +3)
     
     return {
-        "label": label,
-        "confidence": confidence,
+        "label": class_info['label'],
+        "scale": class_info['scale'],
+        "confidence": probabilities[predicted_class].item(),
+        "class_name": class_info['name'],
         "positive_score": positive_score,
         "negative_score": negative_score,
         "neutral_score": neutral_score,
-        "model_entropy": entropy  # Return for analysis
+        "all_scores": probabilities.tolist()
     }
 
 @st.cache_resource
@@ -402,13 +361,13 @@ def main():
                 
                 with col1:
                     emoji = "😊" if result["label"] == "positive" else ("😐" if result["label"] == "neutral" else "😞")
-                    st.metric("Sentiment", f"{emoji} {result['label'].title()}")
+                    st.metric("Sentiment", f"{emoji} {result['class_name']}")
                 
                 with col2:
                     st.metric("Confidence", f"{result['confidence']:.1%}")
                 
                 with col3:
-                    st.metric("Text Length", f"{len(text_input)} chars")
+                    st.metric("Scale", f"{result['scale']:+d}/3")
                 
                 # Probability bars
                 st.subheader("📊 Detailed Scores")

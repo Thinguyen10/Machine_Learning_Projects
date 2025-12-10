@@ -15,7 +15,8 @@ Converts existing binary datasets to 7-class by analyzing text features.
 
 import torch
 import torch.nn as nn
-from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, get_linear_schedule_with_warmup
+from torch.optim import AdamW
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -31,8 +32,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
 # Paths
-DATA_PATH = '../../raw/IMDB Dataset.csv'
-OUTPUT_DIR = '../../outputs/transformer_7class'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DATA_PATH = os.path.join(BASE_DIR, 'data', 'raw', 'IMDB Dataset.csv')
+OUTPUT_DIR = os.path.join(BASE_DIR, 'outputs', 'transformer_7class')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def convert_to_7class(text, binary_label):
@@ -307,6 +309,20 @@ def main():
     print("\nSaving model...")
     model.save_pretrained(OUTPUT_DIR)
     tokenizer.save_pretrained(OUTPUT_DIR)
+    
+    # Also save as pickle for quick loading
+    import pickle
+    model_dict = {
+        'model_state_dict': model.state_dict(),
+        'class_names': class_names,
+        'num_labels': 7,
+        'model_type': 'distilbert-base-uncased'
+    }
+    
+    with open(os.path.join(OUTPUT_DIR, 'model_7class.pkl'), 'wb') as f:
+        pickle.dump(model_dict, f)
+    
+    print(f"Model saved as both Transformers format and .pkl in {OUTPUT_DIR}")
     
     # Save metrics
     metrics = {
