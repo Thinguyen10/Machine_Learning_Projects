@@ -252,33 +252,114 @@ def analyze_text(text, tokenizer, model):
         "model_entropy": entropy  # Return for analysis
     }
 
-def extract_aspects(text, sentiment, confidence):
-    """Extract aspects (topics) from text and analyze sentiment"""
-    text_lower = text.lower()
+@st.cache_resource
+def load_aspect_extractor():
+    """Load ML models for aspect extraction using NLP"""
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    import re
     
-    aspect_keywords = {
-        'food': ['food', 'meal', 'dish', 'taste', 'flavor', 'cuisine', 'menu', 'breakfast', 'lunch', 'dinner'],
-        'service': ['service', 'staff', 'waiter', 'employee', 'server', 'host', 'manager'],
-        'price': ['price', 'cost', 'expensive', 'cheap', 'value', 'money', 'worth', 'affordable'],
-        'quality': ['quality', 'fresh', 'clean', 'standard', 'condition'],
-        'location': ['location', 'place', 'area', 'convenient', 'parking', 'access'],
-        'ambiance': ['atmosphere', 'ambiance', 'decor', 'music', 'vibe', 'environment'],
-        'product': ['product', 'item', 'delivery', 'packaging', 'shipping'],
-        'experience': ['experience', 'visit', 'time', 'stay']
-    }
+    # Stopwords to filter out common words
+    stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+                 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+                 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
+                 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them'}
     
-    detected_aspects = []
-    for aspect, keywords in aspect_keywords.items():
-        mentions = sum(1 for keyword in keywords if keyword in text_lower)
-        if mentions > 0:
-            detected_aspects.append({
-                'aspect': aspect,
-                'sentiment': sentiment,
-                'confidence': confidence,
-                'mentions': mentions
-            })
+    # TF-IDF for extracting important terms
+    vectorizer = TfidfVectorizer(
+        max_features=100,
+        ngram_range=(1, 2),  # Single words and 2-word phrases
+        stop_words=list(stopwords),
+        min_df=1,
+        max_df=0.8
+    )
     
-    return detected_aspects
+    return vectorizer
+
+def extract_aspects_ml(texts_and_sentiments):
+    """
+    ML-based aspect extraction using TF-IDF to automatically discover topics.
+    
+    This learns what's important from the actual reviews rather than predefined keywords.
+    Returns top aspects found across all reviews with their sentiment distribution.
+    """
+    if not texts_and_sentiments or len(texts_and_sentiments) < 2:
+        return []
+    
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    import re
+    
+    texts = [item['text'] for item in texts_and_sentiments]
+    sentiments = [item['sentiment'] for item in texts_and_sentiments]
+    
+    # Custom stopwords
+    stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+                 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+                 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+                 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+                 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
+                 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them',
+                 'movie', 'film', 'review', 'product'}  # Domain-agnostic
+    
+    try:
+        # Use TF-IDF to learn important terms automatically
+        vectorizer = TfidfVectorizer(
+            max_features=50,
+            ngram_range=(1, 2),  # Unigrams and bigrams
+            stop_words=list(stopwords),
+            min_df=2,  # Must appear in at least 2 reviews
+            max_df=0.7,  # Filter out if in >70% of reviews
+            token_pattern=r'\b[a-z]{3,}\b'  # Min 3 letters
+        )
+        
+        # Learn vocabulary from all texts
+        tfidf_matrix = vectorizer.fit_transform(texts)
+        feature_names = vectorizer.get_feature_names_out()
+        
+        # Get importance score for each term
+        term_scores = tfidf_matrix.sum(axis=0).A1
+        
+        # Get top terms by TF-IDF score
+        top_indices = term_scores.argsort()[-20:][::-1]  # Top 20 terms
+        
+        # For each top term, collect which reviews mention it and their sentiments
+        aspects = []
+        for idx in top_indices:
+            term = feature_names[idx]
+            score = term_scores[idx]
+            
+            # Find reviews containing this term
+            reviews_with_term = []
+            for i, text in enumerate(texts):
+                if term.lower() in text.lower():
+                    reviews_with_term.append({
+                        'sentiment': sentiments[i],
+                        'text': text[:100]  # Sample
+                    })
+            
+            if len(reviews_with_term) >= 2:  # At least 2 mentions
+                # Count sentiment distribution for this aspect
+                sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+                for review in reviews_with_term:
+                    sentiment_counts[review['sentiment']] += 1
+                
+                # Determine dominant sentiment
+                dominant = max(sentiment_counts, key=sentiment_counts.get)
+                
+                aspects.append({
+                    'aspect': term,
+                    'sentiment': dominant,
+                    'confidence': score,
+                    'mentions': len(reviews_with_term),
+                    'sentiment_breakdown': sentiment_counts
+                })
+        
+        return sorted(aspects, key=lambda x: x['mentions'], reverse=True)[:15]  # Top 15
+        
+    except Exception as e:
+        st.warning(f"Aspect extraction requires at least 2 reviews: {str(e)}")
+        return []
 
 def main():
     # Header
@@ -395,7 +476,6 @@ def main():
                     # Combine text from all selected columns
                     combined_text = " ".join([str(row[col]) for col in text_columns if pd.notna(row[col])])
                     sentiment = analyze_text(combined_text, tokenizer, model)
-                    aspects = extract_aspects(combined_text, sentiment['label'], sentiment['confidence'])
                     
                     results.append({
                         **row.to_dict(),
@@ -404,8 +484,7 @@ def main():
                         'confidence': sentiment['confidence'],
                         'positive_score': sentiment['positive_score'],
                         'negative_score': sentiment['negative_score'],
-                        'neutral_score': sentiment['neutral_score'],
-                        'aspects': aspects
+                        'neutral_score': sentiment['neutral_score']
                     })
                     
                     # Update progress
@@ -472,63 +551,91 @@ def main():
                     )
                     st.plotly_chart(fig_hist, use_container_width=True)
                 
-                # Aspect Analysis
-                st.subheader("🏷️ Top Aspects Mentioned")
+                # ML-Based Aspect Analysis
+                st.subheader("🏷️ Top Aspects Discovered by ML")
+                st.caption("Using TF-IDF to automatically learn important topics from reviews")
                 
-                # Aggregate all aspects
-                all_aspects = []
-                for aspects_list in results_df['aspects']:
-                    if isinstance(aspects_list, list):
-                        all_aspects.extend(aspects_list)
+                # Prepare data for ML aspect extraction
+                texts_and_sentiments = [
+                    {'text': row['combined_text'], 'sentiment': row['sentiment']}
+                    for _, row in results_df.iterrows()
+                ]
                 
-                if all_aspects:
-                    aspect_df = pd.DataFrame(all_aspects)
+                # Extract aspects using ML
+                discovered_aspects = extract_aspects_ml(texts_and_sentiments)
+                
+                if discovered_aspects:
+                    # Create dataframe for visualization
+                    aspect_data = []
+                    for asp in discovered_aspects:
+                        for sent in ['positive', 'neutral', 'negative']:
+                            count = asp['sentiment_breakdown'].get(sent, 0)
+                            if count > 0:
+                                aspect_data.append({
+                                    'aspect': asp['aspect'],
+                                    'sentiment': sent,
+                                    'mentions': count
+                                })
                     
-                    # Group by aspect and sentiment
-                    aspect_summary = aspect_df.groupby(['aspect', 'sentiment']).agg({
-                        'mentions': 'sum',
-                        'confidence': 'mean'
-                    }).reset_index()
-                    
-                    # Create aspect visualization
-                    fig_aspects = px.bar(
-                        aspect_summary,
-                        x='aspect',
-                        y='mentions',
-                        color='sentiment',
-                        title="Aspect Mentions by Sentiment",
-                        labels={'mentions': 'Number of Mentions', 'aspect': 'Aspect'},
-                        color_discrete_map={
-                            'positive': '#4CAF50',
-                            'neutral': '#9E9E9E',
-                            'negative': '#F44336'
-                        },
-                        barmode='group'
-                    )
-                    st.plotly_chart(fig_aspects, use_container_width=True)
-                    
-                    # Top aspects table
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.markdown("**🌟 Strengths (Positive Aspects)**")
-                        positive_aspects = aspect_summary[aspect_summary['sentiment'] == 'positive'].nlargest(5, 'mentions')
-                        if not positive_aspects.empty:
-                            for _, row in positive_aspects.iterrows():
-                                st.success(f"**{row['aspect'].title()}**: {int(row['mentions'])} mentions ({row['confidence']:.1%} confidence)")
-                        else:
-                            st.info("No positive aspects detected")
-                    
-                    with col2:
-                        st.markdown("**⚠️ Areas for Improvement (Negative Aspects)**")
-                        negative_aspects = aspect_summary[aspect_summary['sentiment'] == 'negative'].nlargest(5, 'mentions')
-                        if not negative_aspects.empty:
-                            for _, row in negative_aspects.iterrows():
-                                st.error(f"**{row['aspect'].title()}**: {int(row['mentions'])} mentions ({row['confidence']:.1%} confidence)")
-                        else:
-                            st.info("No negative aspects detected")
+                    if aspect_data:
+                        aspect_df = pd.DataFrame(aspect_data)
+                        
+                        # Create aspect visualization
+                        fig_aspects = px.bar(
+                            aspect_df,
+                            x='aspect',
+                            y='mentions',
+                            color='sentiment',
+                            title="ML-Discovered Aspects by Sentiment",
+                            labels={'mentions': 'Number of Mentions', 'aspect': 'Topic/Aspect'},
+                            color_discrete_map={
+                                'positive': '#4CAF50',
+                                'neutral': '#9E9E9E',
+                                'negative': '#F44336'
+                            },
+                            barmode='group'
+                        )
+                        fig_aspects.update_xaxes(tickangle=-45)
+                        st.plotly_chart(fig_aspects, use_container_width=True)
+                        
+                        # Top aspects table
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.markdown("**🌟 Most Discussed Topics (All Sentiments)**")
+                            top_aspects = sorted(discovered_aspects, key=lambda x: x['mentions'], reverse=True)[:5]
+                            for asp in top_aspects:
+                                total = asp['mentions']
+                                breakdown = asp['sentiment_breakdown']
+                                emoji = "😊" if asp['sentiment'] == 'positive' else ("😐" if asp['sentiment'] == 'neutral' else "😞")
+                                st.info(f"{emoji} **{asp['aspect']}**: {total} mentions\n"
+                                       f"  - 😊 {breakdown.get('positive', 0)} | "
+                                       f"😐 {breakdown.get('neutral', 0)} | "
+                                       f"😞 {breakdown.get('negative', 0)}")
+                        
+                        with col2:
+                            st.markdown("**📊 Sentiment Breakdown by Topic**")
+                            # Show topics with most polarized sentiment
+                            for asp in discovered_aspects[:5]:
+                                pos = asp['sentiment_breakdown'].get('positive', 0)
+                                neu = asp['sentiment_breakdown'].get('neutral', 0)
+                                neg = asp['sentiment_breakdown'].get('negative', 0)
+                                total = pos + neu + neg
+                                
+                                if total > 0:
+                                    st.write(f"**{asp['aspect']}**")
+                                    cols = st.columns([pos or 0.1, neu or 0.1, neg or 0.1])
+                                    with cols[0]:
+                                        if pos > 0:
+                                            st.success(f"{pos}/{total}")
+                                    with cols[1]:
+                                        if neu > 0:
+                                            st.info(f"{neu}/{total}")
+                                    with cols[2]:
+                                        if neg > 0:
+                                            st.error(f"{neg}/{total}")
                 else:
-                    st.info("No specific aspects detected in the reviews. Reviews may be too general or short.")
+                    st.info("ML aspect extraction requires at least 2 reviews with sufficient text.")
                 
                 # Show results table
                 st.subheader("📋 Detailed Results")
