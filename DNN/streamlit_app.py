@@ -19,6 +19,78 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS for professional bright theme
+st.markdown("""
+    <style>
+    /* Main background - Light blue-gray gradient */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
+        border-right: 2px solid #d1dce6;
+    }
+    
+    /* Headers with professional blue accent */
+    h1, h2, h3 {
+        color: #1e3a5f !important;
+    }
+    
+    /* Metric containers */
+    [data-testid="stMetricValue"] {
+        color: #2c5282 !important;
+        font-weight: 600;
+    }
+    
+    /* Cards and containers */
+    [data-testid="stExpander"] {
+        background-color: white;
+        border: 1px solid #d1dce6;
+        border-radius: 8px;
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+        color: white;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 2rem;
+        box-shadow: 0 2px 4px rgba(66, 153, 225, 0.3);
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+        box-shadow: 0 4px 8px rgba(66, 153, 225, 0.4);
+    }
+    
+    /* Text input and select boxes */
+    .stTextArea textarea, .stSelectbox select, .stMultiSelect {
+        border: 2px solid #cbd5e0;
+        border-radius: 6px;
+        background-color: white;
+    }
+    
+    /* Success/Info/Warning boxes */
+    .stSuccess, .stInfo, .stWarning {
+        background-color: white;
+        border-left-width: 4px;
+        border-radius: 6px;
+    }
+    
+    /* File uploader */
+    [data-testid="stFileUploader"] {
+        background-color: white;
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # Model configuration
 MODEL_ID = "Thi144/sentiment-distilbert"
 
