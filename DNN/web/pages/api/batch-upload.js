@@ -2,6 +2,23 @@
 
 const HF_API_URL = 'https://api-inference.huggingface.co/models';
 
+// Simple rule-based sentiment analysis fallback
+function analyzeSentimentRuleBased(text) {
+  const positive = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'love', 'best', 'perfect'];
+  const negative = ['bad', 'terrible', 'awful', 'horrible', 'worst', 'hate', 'poor', 'disappointing'];
+  
+  const textLower = text.toLowerCase();
+  let positiveCount = positive.filter(word => textLower.includes(word)).length;
+  let negativeCount = negative.filter(word => textLower.includes(word)).length;
+  
+  if (positiveCount > negativeCount) {
+    return { label: 'positive', confidence: 0.6 + (positiveCount * 0.05) };
+  } else if (negativeCount > positiveCount) {
+    return { label: 'negative', confidence: 0.6 + (negativeCount * 0.05) };
+  }
+  return { label: 'neutral', confidence: 0.5 };
+}
+
 async function predictWithHuggingFace(text, modelId, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -95,18 +112,33 @@ export default async function handler(req, res) {
       try {
         const result = await predictWithHuggingFace(limitedTexts[i], modelId, token);
         if (!result.loading) {
-          results.push({ text: limitedTexts[i], prediction: result, index: i });
+          results.push({ 
+            text: limitedTexts[i], 
+            prediction: result, 
+            index: i,
+            review_id: i + 1 
+          });
         }
         // Rate limiting: wait 1 second between requests
         if (i < limitedTexts.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       } catch (error) {
-        results.push({ text: limitedTexts[i], error: error.message, index: i });
+        console.error(`Error processing text ${i}:`, error.message);
+        // Use rule-based fallback on error
+        const fallbackPrediction = analyzeSentimentRuleBased(limitedTexts[i]);
+        results.push({ 
+          text: limitedTexts[i], 
+          prediction: fallbackPrediction,
+          index: i,
+          review_id: i + 1,
+          fallback: true,
+          error: error.message 
+        });
       }
     }
     
-    const successCount = results.filter(r => !r.error).length;
+    const successCount = results.filter(r => r.prediction).length;
 
     // Store results for dashboard (using Vercel KV would be better for production)
     const analysisResults = results.map(r => ({
