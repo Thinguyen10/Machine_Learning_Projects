@@ -1,91 +1,112 @@
 # 🧠 Sentiment Analysis with Deep Neural Networks
 
-Production-ready sentiment analysis using transformer models with Streamlit dashboard for batch processing.
+Production-ready 7-class sentiment analysis using DistilBERT with Streamlit dashboard for unlimited batch processing.
 
 ## 🎯 Quick Start
 
-**Live Demo:** [Streamlit App](https://your-app.streamlit.app) - Upload CSV and analyze unlimited reviews
+**Live Demo:** Deploy to Streamlit Cloud - Upload CSV and analyze unlimited reviews with nuanced sentiment scoring
 
-**Model:** DistilBERT (94.22% accuracy) - Hosted on HuggingFace: `Thi144/sentiment-distilbert`
+**Model:** DistilBERT 7-Class (73.7% accuracy) - Hosted on HuggingFace: `Thi144/sentiment-distilbert-7class`
+
+**Scale:** -3 (Very Negative) to +3 (Very Positive) with true neutral detection
 
 **Dataset:** 6,000 IMDB movie reviews
 
 ---
 
-## 🤖 ML/Neural Network Algorithms Used
+## 📝 What Was Implemented
 
-### 1. **DistilBERT Transformer** (Primary Model - 94.22% accuracy)
-**Task:** Binary sentiment classification (positive/negative)  
+This project implements a complete sentiment analysis pipeline from data preprocessing to production deployment:
+
+**Core ML Implementation:**
+- Fine-tuned DistilBERT transformer for 7-class sentiment (-3 to +3 scale)
+- Multi-class classification with automatic label conversion from binary IMDB dataset
+- TF-IDF-based aspect extraction for automatic topic discovery
+- Softmax probability distribution for confidence scoring
+
+**Production Deployment:**
+- Streamlit dashboard with unlimited CSV batch processing
+- Model hosted on HuggingFace Hub for cloud access
+- Interactive visualizations with Plotly charts
+- Real-time progress tracking and downloadable results
+
+**Training Infrastructure:**
+- PyTorch-based training pipeline with gradient clipping
+- AdamW optimizer with learning rate scheduling
+- Automatic metric logging (accuracy, precision, recall, F1)
+- Confusion matrix generation for performance analysis
+
+**Data Management:**
+- Training data archived (507MB → 173MB compressed)
+- Model versioning on HuggingFace Hub
+- Config files preserved for reproducibility
+
+---
+
+## 🤖 ML/Neural Network Algorithms
+
+### 1. **DistilBERT Transformer 7-Class** (Primary Model - 73.7% accuracy)
+
+**Task:** Multi-class sentiment classification (-3 to +3 scale)  
 **Algorithm:** 6-layer transformer with multi-head attention (66M parameters)  
-**How it works:** Pre-trained on Wikipedia, fine-tuned on 6,000 IMDB reviews using transfer learning  
-**Deployment:** Loaded from HuggingFace Hub for predictions
+**How it works:** Pre-trained on Wikipedia, fine-tuned on 6,000 IMDB reviews with 7-class labels  
+**Deployment:** Loaded from HuggingFace Hub: `Thi144/sentiment-distilbert-7class`  
+**Classes:** Very Negative (-3), Negative (-2), Slightly Negative (-1), Neutral (0), Slightly Positive (+1), Positive (+2), Very Positive (+3)
 
 ### 2. **Softmax Probability Distribution**
+
 **Task:** Convert model logits to probabilities  
 **How it works:** Takes raw scores and normalizes to [0,1] range that sums to 1.0  
 **Use:** Powers the confidence scores and probability displays
 
-### 3. **Entropy-Based Neutral Detection**
-**Task:** Identify neutral sentiment from binary model  
-**Algorithm:** Information entropy calculation on prediction probabilities  
-**How it works:** High entropy (uncertainty) = model can't decide = likely neutral  
-**Formula:** `entropy = -Σ(p * log₂(p))` where p = probabilities
+### 3. **TF-IDF (Term Frequency-Inverse Document Frequency)**
 
-### 4. **TF-IDF (Term Frequency-Inverse Document Frequency)**
 **Task:** Automatic aspect/topic discovery from reviews  
 **Algorithm:** Statistical NLP technique to identify important words  
 **How it works:** Words frequent in few documents but rare overall = important topics  
 **Use:** Replaces manual keyword lists with learned topics
 
-### 5. **Bidirectional LSTM with Attention** (Trained but not deployed)
-**Task:** Sequence modeling for sentiment (87.56% accuracy)  
-**Algorithm:** Recurrent neural network with attention mechanism  
-**Architecture:** 128 hidden units, 100-dim embeddings  
-**Note:** Available in `outputs/rnn_sentiment_model.pt`
-
 ---
 
 ## 📊 Model Performance
 
-### Model A: Preprocessing Pipeline
-- Text cleaning, tokenization, embedding preparation
-- GloVe embeddings (100-dim)
-- Handles IMDB format and custom CSVs
+**Production Model:** DistilBERT 7-Class Sentiment (73.7% accuracy)
 
-### Model B: RNN with Attention (87.56% accuracy)
-- Bidirectional LSTM (128 hidden units)
-- Attention mechanism for interpretability
-- Training: 20 epochs, Adam optimizer
+**Class-Specific Performance:**
+- Very Negative (-3): 81% precision, 88% recall
+- Negative (-2): 83% precision, 77% recall
+- Slightly Negative (-1): 54% precision, 58% recall
+- Neutral (0): 86% precision, 64% recall
+- Slightly Positive (+1): 58% precision, 54% recall
+- Positive (+2): 79% precision, 83% recall
+- Very Positive (+3): 88% precision, 81% recall
 
-### Model C: DistilBERT Transformer (94.22% accuracy) ⭐
-- 6-layer transformer (66M parameters)
-- Fine-tuned on sentiment data
-- Training: 4 epochs, AdamW optimizer
-- **Best model - deployed in production**
+**Key Insights:**
+- Best at detecting strong sentiments (Very Negative/Positive)
+- Struggles with subtle distinctions (Slightly Negative/Positive)
+- Excellent neutral detection (86% precision)
 
 ---
 
 ## 🚀 Deployment
 
-### Streamlit Cloud (Primary)
-**Live App:** Processes unlimited reviews with real-time progress
+### Streamlit Cloud
+
+**Live App:** Processes unlimited reviews with real-time progress and nuanced sentiment scoring
 
 **Features:**
-- Upload any CSV file
-- Analyze all 120+ reviews (no limits)
+- Upload any CSV file with review text
+- Analyze unlimited reviews (no size limits)
+- 7-class sentiment scale (-3 to +3)
+- ML-based aspect extraction
 - Interactive charts and dashboard
-- Download results with sentiment scores
+- Download results with sentiment scores and confidence
 
 **Setup:**
-1. Go to https://share.streamlit.io
-2. Deploy `DNN/streamlit_app.py` from this repo
-3. Auto-loads model from HuggingFace
-
-### Vercel (Alternative - API only)
-
-- Serverless API at `/api/predict`
-- 10-second timeout (processes ~20 reviews max)
-- Environment: `HUGGINGFACE_MODEL_ID`, `HUGGINGFACE_TOKEN`
+1. Deploy to Streamlit Cloud: https://share.streamlit.io
+2. Connect to this repo: `Thinguyen10/CST-435`
+3. Set main file path: `DNN/streamlit_app.py`
+4. Auto-loads model from HuggingFace Hub
 
 ---
 
@@ -101,19 +122,7 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-**Or run Next.js version:**
-
-```bash
-# Backend (Terminal 1)
-cd api/predict
-python local_server.py
-
-# Frontend (Terminal 2)
-cd web
-npm install && npm run dev
-```
-
-**Access:** http://localhost:3000
+**Access:** http://localhost:8501
 
 ---
 
@@ -121,57 +130,99 @@ npm install && npm run dev
 
 ```
 DNN/
-├── streamlit_app.py          # Main Streamlit app ⭐
+├── streamlit_app.py              # Main Streamlit dashboard ⭐
+├── requirements.txt              # Python dependencies
+├── data_archive.tar.gz           # Training data (507MB → 173MB compressed)
 ├── model_training/
-│   ├── model_a/              # Preprocessing
-│   ├── model_b/              # RNN training
-│   └── model_c/              # DistilBERT training
+│   └── model_c/
+│       ├── train_multiclass.py   # 7-class model training script
+│       └── upload_7class_model.py
 ├── outputs/
-│   ├── rnn_sentiment_model.pt
-│   └── transformer/          # DistilBERT (uploaded to HuggingFace)
-├── web/                      # Next.js frontend
-└── api/predict/              # Python backend
+│   └── transformer_7class/       # Model config & metrics (model files on HuggingFace)
+│       ├── config.json
+│       ├── vocab.txt
+│       ├── tokenizer_config.json
+│       ├── metrics_7class.json
+│       ├── confusion_matrix_7class.png
+│       └── README.md             # Model card
+└── report/
+    └── final_project.md
 ```
+
+---
+
+## 🔄 Retraining the Model
+
+To retrain or improve the model with the archived data:
+
+```bash
+# 1. Extract training data
+tar -xzf data_archive.tar.gz
+
+# 2. Create virtual environment
+python -m venv venv_training
+source venv_training/bin/activate  # On Windows: venv_training\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run training script
+python model_training/model_c/train_multiclass.py
+
+# 5. Upload to HuggingFace (requires token)
+python model_training/model_c/upload_7class_model.py
+```
+
+**Training Data Contents:**
+- IMDB Dataset.csv (63MB): 50,000 movie reviews
+- Twitter.csv (228MB): Twitter sentiment data
+- Amazon_Health_and_Personal_Care.jsonl (216MB): Product reviews
 
 ---
 
 ## 📊 Results
 
-| Model | Accuracy | Algorithm Type | Use Case |
-|-------|----------|----------------|----------|
-| RNN + Attention | 87.56% | Deep Learning (LSTM) | Trained but not deployed |
-| DistilBERT | 94.22% | Deep Learning (Transformer) | **Production deployment** |
-| TF-IDF | N/A | Traditional ML | Aspect extraction |
-| Entropy | N/A | Statistical ML | Neutral detection |
+**Production Model Performance:**
 
-**Training Dataset:** 6,000 IMDB movie reviews
+| Metric | Score |
+|--------|-------|
+| Overall Accuracy | 73.7% |
+| Very Negative/Positive | 81-88% |
+| Neutral Detection | 86% precision |
+| Training Dataset | 6,000 IMDB reviews |
+| Training Time | ~15-20 min (CPU) |
+
+**Algorithm Comparison:**
+
+| Algorithm | Type | Use Case |
+|-----------|------|----------|
+| DistilBERT 7-Class | Deep Learning (Transformer) | Primary sentiment classification |
+| Softmax | Neural Network | Probability distribution |
+| TF-IDF | Traditional ML | Aspect/topic extraction |
 
 ---
 
 ## 🔬 Technical Stack
 
 **Deep Learning:**
-- PyTorch (neural network framework)
-- Transformers / HuggingFace (pre-trained models)
-- Transfer learning (fine-tuning)
+- PyTorch 2.0+ (neural network framework)
+- Transformers/HuggingFace (pre-trained models)
+- Transfer learning (fine-tuning DistilBERT)
 
 **Traditional ML:**
 - Scikit-learn (TF-IDF, vectorization)
-- Information theory (entropy)
+- NumPy/Pandas (data processing)
 
 **Frontend:**
-- Streamlit (primary dashboard)
-- Next.js (alternative API interface)
+- Streamlit (interactive dashboard)
+- Plotly (data visualization)
 
 **Deployment:**
-- Streamlit Cloud (free tier)
-- Vercel (serverless API)
-- **Model Hosting:** HuggingFace Hub
-
-**Frameworks**
-- PyTorch, Hugging Face Transformers, Next.js
+- Streamlit Cloud (free tier, unlimited processing)
+- HuggingFace Hub (model hosting)
 
 ---
 
 **CST-435 Deep Neural Networks Project**  
+**Model:** https://huggingface.co/Thi144/sentiment-distilbert-7class  
 Grand Canyon University | December 2025

@@ -1,44 +1,19 @@
 # ===== CRITICAL: Large Files (DO NOT COMMIT) =====
-# Virtual environment (1GB)
-venv/
+# Virtual environment
+venv*/
 .venv/
 env/
 ENV/
 
-# Model files (uploaded to Hugging Face instead)
-outputs/rnn_sentiment_model.pt
-outputs/rnn_checkpoints/best_model.pt
-outputs/transformer/model.safetensors
-outputs/transformer/checkpoint-*/
+# Model files (uploaded to HuggingFace: Thi144/sentiment-distilbert-7class)
+outputs/transformer_7class/model.safetensors
+outputs/transformer_7class/model_7class.pkl
+*.safetensors
+*.pkl
 
-# Other large files
-outputs/transformer/optimizer.pt
-outputs/transformer/training_args.bin
-outputs/*.db
-*.db
-
-# Raw training data (600MB+)
-model_training/data/raw/
-model_training/data/raw/*.csv
-model_training/data/raw/*.jsonl
-raw/*.csv
-raw/*.jsonl
-
-# Processed data
-model_training/data/processed/
-model_training/data/embeddings/
-
-# Node modules (200MB+)
-node_modules/
-web/node_modules/
-.next/
-web/.next/
-web/.next/cache/
-
-# Database (can be regenerated)
-outputs/sentiment.db
-outputs/*.db
-*.db
+# Training data (archived in data_archive.tar.gz for retraining)
+data/
+data_archive.tar.gz
 
 # ===== Standard Python Ignores =====
 __pycache__/

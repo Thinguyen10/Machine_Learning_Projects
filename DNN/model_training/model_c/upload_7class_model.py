@@ -35,7 +35,8 @@ def upload_model():
         api.upload_folder(
             folder_path=MODEL_DIR,
             repo_id=REPO_NAME,
-            commit_message="Upload 7-class sentiment model (-3 to +3 scale)"
+            commit_message="Upload 7-class sentiment model (-3 to +3 scale)",
+            ignore_patterns=["*.pyc", "__pycache__", ".git"]
         )
         
         print(f"\n✅ Model uploaded successfully!")
