@@ -105,10 +105,15 @@ export default function Upload() {
       reader.onload = async (e) => {
         const csvData = e.target.result;
 
+        console.log('[UPLOAD] CSV data length:', csvData.length);
+        console.log('[UPLOAD] Selected columns:', selectedTextColumns);
+
         // Send to API
         const apiUrl = process.env.NODE_ENV === 'production'
           ? '/api/batch-upload'
           : 'http://localhost:8000/api/batch-upload';
+        
+        console.log('[UPLOAD] Sending to:', apiUrl);
         
         const response = await fetch(apiUrl, {
           method: 'POST',
@@ -123,7 +128,9 @@ export default function Upload() {
           }),
         });
 
+        console.log('[UPLOAD] Response status:', response.status);
         const result = await response.json();
+        console.log('[UPLOAD] Response data:', result);
 
         if (response.ok) {
           setUploadResult(result);
@@ -132,12 +139,14 @@ export default function Upload() {
           setCsvHeaders([]);
           setSelectedTextColumns([]);
         } else {
+          console.error('[UPLOAD] Error:', result.error);
           setError(result.error || 'Upload failed');
         }
         setUploading(false);
       };
 
       reader.onerror = () => {
+        console.error('[UPLOAD] Failed to read file');
         setError('Failed to read file');
         setUploading(false);
       };
