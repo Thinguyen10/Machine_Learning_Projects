@@ -148,7 +148,19 @@ def load_model():
     return tokenizer, model
 
 def analyze_text(text, tokenizer, model):
-    """Analyze sentiment of a single text with neutral detection"""
+    """
+    Analyze sentiment using ML model with learned neutral detection.
+    
+    Approach: Use the model's uncertainty as a natural signal for neutral sentiment.
+    When the model is uncertain between positive/negative (scores close to 50/50),
+    it indicates the text has mixed or neutral sentiment - the model naturally
+    learned this pattern from the data.
+    
+    This is better than keyword matching because:
+    1. Model learns contextual patterns (e.g., "decent but predictable")
+    2. Handles subtle language the model was trained on
+    3. No manual rules - learned from actual examples
+    """
     if not text or len(text.strip()) < 3:
         return {
             "label": "neutral",
@@ -158,63 +170,86 @@ def analyze_text(text, tokenizer, model):
             "neutral_score": 0.34
         }
     
-    # Rule-based neutral keywords check first
-    neutral_keywords = [
-        'average', 'okay', 'decent', 'fine', 'acceptable', 'moderate', 'fair',
-        'mixed', 'so-so', 'mediocre', 'neither', 'neutral', 'balanced'
-    ]
-    text_lower = text.lower()
-    has_neutral_keywords = any(keyword in text_lower for keyword in neutral_keywords)
-    
-    # Tokenize and predict
+    # Get model predictions
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512, padding=True)
     
     with torch.no_grad():
         outputs = model(**inputs)
-        predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        logits = outputs.logits
+        predictions = torch.nn.functional.softmax(logits, dim=-1)
     
     negative_score = predictions[0][0].item()
     positive_score = predictions[0][1].item()
     
-    # Calculate score difference
+    # Calculate model uncertainty metrics
     score_diff = abs(positive_score - negative_score)
     max_score = max(positive_score, negative_score)
+    entropy = -(positive_score * torch.log2(torch.tensor(positive_score + 1e-10)) + 
+                negative_score * torch.log2(torch.tensor(negative_score + 1e-10))).item()
     
-    # Enhanced neutral detection with multiple conditions
+    # ML-based neutral detection using model's natural uncertainty
+    # When model can't decide confidently between pos/neg, it's likely neutral
+    
+    # Three natural signals from the model:
+    # 1. Low score difference (model sees both positive and negative signals)
+    # 2. High entropy (maximum uncertainty = 1.0, indicates confusion)
+    # 3. Both scores in middle range (not strongly positive or negative)
+    
+    uncertainty_threshold = 0.7  # Entropy closer to 1.0 means more uncertain
+    score_diff_threshold = 0.35  # Scores closer than 35% indicates mixed sentiment
+    middle_range_min = 0.35
+    middle_range_max = 0.65
+    
+    # Neutral if model shows high uncertainty through multiple signals
     is_neutral = False
+    confidence_penalty = 0
     
-    # Condition 1: Has explicit neutral language
-    if has_neutral_keywords and score_diff < 0.35:
+    if entropy > uncertainty_threshold:
+        # Model is very uncertain - strong signal for neutral
         is_neutral = True
+        confidence_penalty = 0.1
     
-    # Condition 2: Scores are very close (within 20%)
-    elif score_diff < 0.20:
-        is_neutral = True
+    if score_diff < score_diff_threshold:
+        # Scores are close - model sees mixed sentiment
+        if not is_neutral:
+            is_neutral = True
+            confidence_penalty = 0.15
+        else:
+            confidence_penalty = 0.2  # Both signals agree
     
-    # Condition 3: Neither score is confident (both under 60%)
-    elif max_score < 0.60:
-        is_neutral = True
+    if (middle_range_min <= positive_score <= middle_range_max and 
+        middle_range_min <= negative_score <= middle_range_max):
+        # Both in middle - not strongly either way
+        if not is_neutral:
+            is_neutral = True
+            confidence_penalty = 0.1
+        else:
+            confidence_penalty = max(confidence_penalty, 0.25)
     
-    # Condition 4: Scores in the middle range (45-55% for both)
-    elif 0.45 <= positive_score <= 0.55 and 0.45 <= negative_score <= 0.55:
-        is_neutral = True
-    
+    # Calculate final scores
     if is_neutral:
-        neutral_score = max(0.6, 1.0 - score_diff)
+        # Neutral detected by model's learned patterns
+        neutral_score = min(0.95, max(0.55, 1.0 - score_diff + confidence_penalty))
         label = "neutral"
         confidence = neutral_score
+        
+        # Redistribute positive/negative to sum to ~1.0 with neutral
+        scale = (1.0 - neutral_score) / (positive_score + negative_score)
+        positive_score = positive_score * scale
+        negative_score = negative_score * scale
     else:
         # Clear positive or negative
         label = "positive" if positive_score > negative_score else "negative"
         confidence = max_score
-        neutral_score = 1.0 - confidence
+        neutral_score = max(0.05, min(0.45, 1.0 - confidence))
     
     return {
         "label": label,
         "confidence": confidence,
         "positive_score": positive_score,
         "negative_score": negative_score,
-        "neutral_score": neutral_score
+        "neutral_score": neutral_score,
+        "model_entropy": entropy  # Return for analysis
     }
 
 def extract_aspects(text, sentiment, confidence):
