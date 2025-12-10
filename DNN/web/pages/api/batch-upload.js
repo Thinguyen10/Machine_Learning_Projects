@@ -69,34 +69,59 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('[BATCH] Request received');
     const { csv_data, filename, text_columns } = req.body;
 
     if (!csv_data) {
+      console.log('[BATCH] No CSV data in request');
       return res.status(400).json({ error: 'No CSV data provided' });
     }
 
-    // Parse CSV
+    console.log('[BATCH] CSV data length:', csv_data.length);
+    
+    // Parse CSV - handle both comma and quoted fields
     const rows = csv_data.split('\n').filter(row => row.trim());
-    const headers = rows[0].split(',').map(h => h.trim());
-    const dataRows = rows.slice(1);
+    console.log('[BATCH] Total rows:', rows.length);
+    
+    if (rows.length < 2) {
+      return res.status(400).json({ error: 'CSV must have at least a header and one data row' });
+    }
+    
+    const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const dataRows = rows.slice(1).filter(row => row.trim());
+    
+    console.log('[BATCH] Headers:', headers);
+    console.log('[BATCH] Data rows:', dataRows.length);
+    console.log('[BATCH] Text columns requested:', text_columns);
     
     // Extract text from specified columns
-    const textColumnIndex = headers.indexOf(text_columns?.[0] || headers[0]);
-    const texts = dataRows.map(row => {
-      const cols = row.split(',');
-      return cols[textColumnIndex]?.trim() || '';
+    const textColumnIndex = text_columns?.[0] ? headers.indexOf(text_columns[0]) : 0;
+    console.log('[BATCH] Using column index:', textColumnIndex, 'Column name:', headers[textColumnIndex]);
+    
+    const texts = dataRows.map((row, idx) => {
+      // Simple CSV parsing - handles basic quoted fields
+      const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || row.split(',');
+      const text = cols[textColumnIndex]?.trim().replace(/^"|"$/g, '') || '';
+      if (idx < 3) console.log(`[BATCH] Row ${idx} text:`, text.substring(0, 50));
+      return text;
     }).filter(t => t.length > 0);
+    
+    console.log('[BATCH] Extracted texts:', texts.length);
 
     const modelId = process.env.HUGGINGFACE_MODEL_ID;
     const token = process.env.HUGGINGFACE_TOKEN;
 
+    console.log('[BATCH] Model ID:', modelId ? 'Set' : 'Not set');
+    console.log('[BATCH] Token:', token ? 'Set' : 'Not set');
+
     if (!modelId) {
-      // Fallback without predictions
+      console.log('[BATCH] No model configured, returning early');
       return res.status(200).json({
         message: 'Batch upload received (no model configured)',
         filename: filename || 'upload.csv',
         total_rows: dataRows.length,
         processed: 0,
+        processed_rows: 0,
         note: 'Configure HUGGINGFACE_MODEL_ID to enable predictions.',
         success: true
       });
@@ -105,6 +130,8 @@ export default async function handler(req, res) {
     // Limit batch size to avoid timeout (Vercel has 10s limit for hobby plan)
     const maxBatch = 5;
     const limitedTexts = texts.slice(0, maxBatch);
+    
+    console.log('[BATCH] Processing', limitedTexts.length, 'texts');
     
     // Process batch with rate limiting
     const results = [];
@@ -140,6 +167,9 @@ export default async function handler(req, res) {
     
     const successCount = results.filter(r => r.prediction).length;
 
+    console.log('[BATCH] Success count:', successCount);
+    console.log('[BATCH] Total results:', results.length);
+
     // Store results for dashboard (using Vercel KV would be better for production)
     const analysisResults = results.map(r => ({
       text: r.text,
@@ -151,6 +181,8 @@ export default async function handler(req, res) {
     // Save to global variable that dashboard can read
     // Note: In production, use a real database (Vercel KV, MongoDB, etc.)
     global.lastBatchResults = analysisResults;
+
+    console.log('[BATCH] Returning response with', successCount, 'processed');
 
     return res.status(200).json({
       message: 'Batch upload completed',
@@ -166,10 +198,12 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('[BATCH] Upload error:', error);
+    console.error('[BATCH] Stack:', error.stack);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
