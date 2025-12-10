@@ -166,10 +166,15 @@ def main():
             
             # Column selection
             st.subheader("⚙️ Configuration")
-            text_column = st.selectbox(
-                "Select the column containing text to analyze:",
-                df.columns.tolist()
+            text_columns = st.multiselect(
+                "Select column(s) containing text to analyze:",
+                df.columns.tolist(),
+                default=[df.columns[0]] if len(df.columns) > 0 else []
             )
+            
+            if not text_columns:
+                st.warning("⚠️ Please select at least one column to analyze")
+                return
             
             # Process button
             if st.button("🚀 Analyze All Reviews", type="primary"):
@@ -182,15 +187,18 @@ def main():
                 
                 # Process each row
                 for idx, row in df.iterrows():
-                    text = str(row[text_column])
-                    sentiment = analyze_text(text, tokenizer, model)
+                    # Combine text from all selected columns
+                    combined_text = " ".join([str(row[col]) for col in text_columns if pd.notna(row[col])])
+                    sentiment = analyze_text(combined_text, tokenizer, model)
                     
                     results.append({
                         **row.to_dict(),
+                        'combined_text': combined_text,
                         'sentiment': sentiment['label'],
                         'confidence': sentiment['confidence'],
                         'positive_score': sentiment['positive_score'],
-                        'negative_score': sentiment['negative_score']
+                        'negative_score': sentiment['negative_score'],
+                        'neutral_score': sentiment['neutral_score']
                     })
                     
                     # Update progress
