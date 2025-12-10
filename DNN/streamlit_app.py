@@ -19,74 +19,118 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS for professional bright theme
+# Custom CSS for professional dark blue theme
 st.markdown("""
     <style>
-    /* Main background - Light blue-gray gradient */
+    /* Main background - Dark blue gradient */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8f0f7 100%);
+        background: linear-gradient(135deg, #1a2332 0%, #2d3e50 100%);
+        color: #ffffff;
     }
     
     /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #ffffff 0%, #f0f4f8 100%);
-        border-right: 2px solid #d1dce6;
+        background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+        border-right: 2px solid #475569;
     }
     
-    /* Headers with professional blue accent */
+    [data-testid="stSidebar"] * {
+        color: #e2e8f0 !important;
+    }
+    
+    /* Headers with bright accent */
     h1, h2, h3 {
-        color: #1e3a5f !important;
+        color: #60a5fa !important;
+    }
+    
+    /* All text white */
+    p, span, div, label {
+        color: #e2e8f0 !important;
     }
     
     /* Metric containers */
     [data-testid="stMetricValue"] {
-        color: #2c5282 !important;
+        color: #60a5fa !important;
         font-weight: 600;
+    }
+    
+    [data-testid="stMetricLabel"] {
+        color: #cbd5e1 !important;
     }
     
     /* Cards and containers */
     [data-testid="stExpander"] {
-        background-color: white;
-        border: 1px solid #d1dce6;
+        background-color: rgba(30, 41, 59, 0.6);
+        border: 1px solid #475569;
         border-radius: 8px;
+        color: #ffffff;
     }
     
     /* Buttons */
     .stButton>button {
-        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-        color: white;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white !important;
         font-weight: 600;
         border: none;
         border-radius: 6px;
         padding: 0.5rem 2rem;
-        box-shadow: 0 2px 4px rgba(66, 153, 225, 0.3);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     }
     
     .stButton>button:hover {
-        background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
-        box-shadow: 0 4px 8px rgba(66, 153, 225, 0.4);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.5);
     }
     
     /* Text input and select boxes */
-    .stTextArea textarea, .stSelectbox select, .stMultiSelect {
-        border: 2px solid #cbd5e0;
+    .stTextArea textarea, .stSelectbox select, .stMultiSelect, input {
+        border: 2px solid #475569;
         border-radius: 6px;
-        background-color: white;
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+    }
+    
+    /* Dataframe styling */
+    [data-testid="stDataFrame"] {
+        background-color: #1e293b;
     }
     
     /* Success/Info/Warning boxes */
-    .stSuccess, .stInfo, .stWarning {
-        background-color: white;
-        border-left-width: 4px;
-        border-radius: 6px;
+    .stSuccess {
+        background-color: rgba(34, 197, 94, 0.1);
+        border-left: 4px solid #22c55e;
+        color: #86efac !important;
+    }
+    
+    .stInfo {
+        background-color: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid #3b82f6;
+        color: #93c5fd !important;
+    }
+    
+    .stWarning {
+        background-color: rgba(251, 146, 60, 0.1);
+        border-left: 4px solid #fb923c;
+        color: #fdba74 !important;
+    }
+    
+    .stError {
+        background-color: rgba(239, 68, 68, 0.1);
+        border-left: 4px solid #ef4444;
+        color: #fca5a5 !important;
     }
     
     /* File uploader */
     [data-testid="stFileUploader"] {
-        background-color: white;
-        border: 2px dashed #cbd5e0;
+        background-color: rgba(30, 41, 59, 0.6);
+        border: 2px dashed #475569;
         border-radius: 8px;
         padding: 1rem;
+    }
+    
+    /* Progress bar */
+    .stProgress > div > div {
+        background-color: #3b82f6;
     }
     </style>
 """, unsafe_allow_html=True)
