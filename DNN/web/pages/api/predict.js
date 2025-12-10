@@ -50,24 +50,40 @@ async function predictWithHuggingFace(text, modelId, token = null) {
   };
 }
 
-function extractAspects(text, overallSentiment, confidence) {
-  const textLower = text.toLowerCase();
-  const aspectKeywords = {
-    'food': ['food', 'meal', 'dish', 'taste', 'flavor'],
-    'service': ['service', 'staff', 'waiter', 'employee'],
-    'price': ['price', 'cost', 'expensive', 'cheap', 'value'],
-    'quality': ['quality', 'fresh', 'clean'],
-    'ambiance': ['atmosphere', 'ambiance', 'decor'],
-  };
+// ML-based aspect extraction using word frequency analysis (no predefined keywords)
+function extractAspectsML(text, overallSentiment, confidence) {
+  // Extract important words using simple NLP techniques
+  const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+    'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+    'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+    'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+    'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
+    'movie', 'film', 'review', 'product', 'not', 'very', 'really']);
   
-  const aspects = [];
-  for (const [aspect, keywords] of Object.entries(aspectKeywords)) {
-    const mentions = keywords.filter(kw => textLower.includes(kw)).length;
-    if (mentions > 0) {
-      aspects.push({ aspect, sentiment: overallSentiment, confidence, mentions });
-    }
-  }
-  return aspects;
+  // Tokenize and count word frequencies
+  const words = text.toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !stopwords.has(w));
+  
+  // Count occurrences
+  const wordCounts = {};
+  words.forEach(word => {
+    wordCounts[word] = (wordCounts[word] || 0) + 1;
+  });
+  
+  // Get top words by frequency
+  const sortedWords = Object.entries(wordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);  // Top 5 topics
+  
+  // Return as aspects
+  return sortedWords.map(([word, count]) => ({
+    aspect: word,
+    sentiment: overallSentiment,
+    confidence: confidence,
+    mentions: count
+  }));
 }
 
 export default async function handler(req, res) {
@@ -148,8 +164,8 @@ export default async function handler(req, res) {
       });
     }
     
-    // Extract aspects
-    const aspects = extractAspects(text, prediction.label, prediction.confidence);
+    // Extract aspects using ML approach (word frequency)
+    const aspects = extractAspectsML(text, prediction.label, prediction.confidence);
     
     // Format response to match original API
     const sentiment = {
