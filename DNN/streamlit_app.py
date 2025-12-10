@@ -144,9 +144,9 @@ MODEL_ID = "Thi144/sentiment-distilbert-7class"  # 7-class model (-3 to +3)
 CLASS_LABELS = {
     0: {'scale': -3, 'label': 'negative', 'name': 'Very Negative'},
     1: {'scale': -2, 'label': 'negative', 'name': 'Negative'},
-    2: {'scale': -1, 'label': 'negative', 'name': 'Slightly Negative'},
+    2: {'scale': -1, 'label': 'neutral', 'name': 'Slightly Negative'},
     3: {'scale': 0, 'label': 'neutral', 'name': 'Neutral'},
-    4: {'scale': 1, 'label': 'positive', 'name': 'Slightly Positive'},
+    4: {'scale': 1, 'label': 'neutral', 'name': 'Slightly Positive'},
     5: {'scale': 2, 'label': 'positive', 'name': 'Positive'},
     6: {'scale': 3, 'label': 'positive', 'name': 'Very Positive'}
 }
