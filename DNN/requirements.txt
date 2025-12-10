@@ -1,23 +1,5 @@
-# Python dependencies for model training and API
-
-# Deep Learning (PyTorch-based)
-torch>=2.0.0
+streamlit>=1.28.0
 transformers>=4.30.0
-
-# Data Processing
-pandas>=1.5.0
-numpy<2.0.0,>=1.24.0  # Pin to 1.x for compatibility
-scikit-learn>=1.2.0
-
-# API Dependencies
-flask>=2.3.0
-requests>=2.31.0
-
-# Utilities
-matplotlib>=3.7.0
-seaborn>=0.12.0
-tqdm>=4.65.0
-
-# Explicitly avoid TensorFlow (project uses PyTorch only)
-# tensorflow is NOT required
-
+torch>=2.0.0
+pandas>=2.0.0
+plotly>=5.15.0
