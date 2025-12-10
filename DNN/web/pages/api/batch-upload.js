@@ -125,6 +125,7 @@ export default async function handler(req, res) {
       filename: filename || 'upload.csv',
       total_rows: dataRows.length,
       processed: successCount,
+      processed_rows: successCount, // Add for UI compatibility
       previewed: limitedTexts.length,
       results: results,
       stored_count: analysisResults.length,
