@@ -42,6 +42,14 @@ def analyze_text(text, tokenizer, model):
             "neutral_score": 0.34
         }
     
+    # Rule-based neutral keywords check first
+    neutral_keywords = [
+        'average', 'okay', 'decent', 'fine', 'acceptable', 'moderate', 'fair',
+        'mixed', 'so-so', 'mediocre', 'neither', 'neutral', 'balanced'
+    ]
+    text_lower = text.lower()
+    has_neutral_keywords = any(keyword in text_lower for keyword in neutral_keywords)
+    
     # Tokenize and predict
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512, padding=True)
     
@@ -52,16 +60,31 @@ def analyze_text(text, tokenizer, model):
     negative_score = predictions[0][0].item()
     positive_score = predictions[0][1].item()
     
-    # Enhanced neutral detection - wider threshold for more balanced results
+    # Calculate score difference
     score_diff = abs(positive_score - negative_score)
-    neutral_threshold = 0.25  # If difference < 25%, it's neutral (increased from 15%)
-    
-    # Also check absolute confidence - if neither is strong, it's neutral
     max_score = max(positive_score, negative_score)
     
-    if score_diff < neutral_threshold or max_score < 0.65:
-        # Scores are too close or not confident enough - neutral sentiment
-        neutral_score = 1.0 - score_diff
+    # Enhanced neutral detection with multiple conditions
+    is_neutral = False
+    
+    # Condition 1: Has explicit neutral language
+    if has_neutral_keywords and score_diff < 0.35:
+        is_neutral = True
+    
+    # Condition 2: Scores are very close (within 20%)
+    elif score_diff < 0.20:
+        is_neutral = True
+    
+    # Condition 3: Neither score is confident (both under 60%)
+    elif max_score < 0.60:
+        is_neutral = True
+    
+    # Condition 4: Scores in the middle range (45-55% for both)
+    elif 0.45 <= positive_score <= 0.55 and 0.45 <= negative_score <= 0.55:
+        is_neutral = True
+    
+    if is_neutral:
+        neutral_score = max(0.6, 1.0 - score_diff)
         label = "neutral"
         confidence = neutral_score
     else:
