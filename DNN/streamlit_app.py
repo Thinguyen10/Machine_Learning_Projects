@@ -52,19 +52,22 @@ def analyze_text(text, tokenizer, model):
     negative_score = predictions[0][0].item()
     positive_score = predictions[0][1].item()
     
-    # Calculate neutral zone - if scores are close, classify as neutral
+    # Enhanced neutral detection - wider threshold for more balanced results
     score_diff = abs(positive_score - negative_score)
-    neutral_threshold = 0.15  # If difference < 15%, it's neutral
+    neutral_threshold = 0.25  # If difference < 25%, it's neutral (increased from 15%)
     
-    if score_diff < neutral_threshold:
-        # Scores are too close - neutral sentiment
+    # Also check absolute confidence - if neither is strong, it's neutral
+    max_score = max(positive_score, negative_score)
+    
+    if score_diff < neutral_threshold or max_score < 0.65:
+        # Scores are too close or not confident enough - neutral sentiment
         neutral_score = 1.0 - score_diff
         label = "neutral"
         confidence = neutral_score
     else:
         # Clear positive or negative
         label = "positive" if positive_score > negative_score else "negative"
-        confidence = max(positive_score, negative_score)
+        confidence = max_score
         neutral_score = 1.0 - confidence
     
     return {
@@ -74,6 +77,34 @@ def analyze_text(text, tokenizer, model):
         "negative_score": negative_score,
         "neutral_score": neutral_score
     }
+
+def extract_aspects(text, sentiment, confidence):
+    """Extract aspects (topics) from text and analyze sentiment"""
+    text_lower = text.lower()
+    
+    aspect_keywords = {
+        'food': ['food', 'meal', 'dish', 'taste', 'flavor', 'cuisine', 'menu', 'breakfast', 'lunch', 'dinner'],
+        'service': ['service', 'staff', 'waiter', 'employee', 'server', 'host', 'manager'],
+        'price': ['price', 'cost', 'expensive', 'cheap', 'value', 'money', 'worth', 'affordable'],
+        'quality': ['quality', 'fresh', 'clean', 'standard', 'condition'],
+        'location': ['location', 'place', 'area', 'convenient', 'parking', 'access'],
+        'ambiance': ['atmosphere', 'ambiance', 'decor', 'music', 'vibe', 'environment'],
+        'product': ['product', 'item', 'delivery', 'packaging', 'shipping'],
+        'experience': ['experience', 'visit', 'time', 'stay']
+    }
+    
+    detected_aspects = []
+    for aspect, keywords in aspect_keywords.items():
+        mentions = sum(1 for keyword in keywords if keyword in text_lower)
+        if mentions > 0:
+            detected_aspects.append({
+                'aspect': aspect,
+                'sentiment': sentiment,
+                'confidence': confidence,
+                'mentions': mentions
+            })
+    
+    return detected_aspects
 
 def main():
     # Header
@@ -190,6 +221,7 @@ def main():
                     # Combine text from all selected columns
                     combined_text = " ".join([str(row[col]) for col in text_columns if pd.notna(row[col])])
                     sentiment = analyze_text(combined_text, tokenizer, model)
+                    aspects = extract_aspects(combined_text, sentiment['label'], sentiment['confidence'])
                     
                     results.append({
                         **row.to_dict(),
@@ -198,7 +230,8 @@ def main():
                         'confidence': sentiment['confidence'],
                         'positive_score': sentiment['positive_score'],
                         'negative_score': sentiment['negative_score'],
-                        'neutral_score': sentiment['neutral_score']
+                        'neutral_score': sentiment['neutral_score'],
+                        'aspects': aspects
                     })
                     
                     # Update progress
@@ -264,6 +297,64 @@ def main():
                         color_discrete_sequence=['#667eea']
                     )
                     st.plotly_chart(fig_hist, use_container_width=True)
+                
+                # Aspect Analysis
+                st.subheader("🏷️ Top Aspects Mentioned")
+                
+                # Aggregate all aspects
+                all_aspects = []
+                for aspects_list in results_df['aspects']:
+                    if isinstance(aspects_list, list):
+                        all_aspects.extend(aspects_list)
+                
+                if all_aspects:
+                    aspect_df = pd.DataFrame(all_aspects)
+                    
+                    # Group by aspect and sentiment
+                    aspect_summary = aspect_df.groupby(['aspect', 'sentiment']).agg({
+                        'mentions': 'sum',
+                        'confidence': 'mean'
+                    }).reset_index()
+                    
+                    # Create aspect visualization
+                    fig_aspects = px.bar(
+                        aspect_summary,
+                        x='aspect',
+                        y='mentions',
+                        color='sentiment',
+                        title="Aspect Mentions by Sentiment",
+                        labels={'mentions': 'Number of Mentions', 'aspect': 'Aspect'},
+                        color_discrete_map={
+                            'positive': '#4CAF50',
+                            'neutral': '#9E9E9E',
+                            'negative': '#F44336'
+                        },
+                        barmode='group'
+                    )
+                    st.plotly_chart(fig_aspects, use_container_width=True)
+                    
+                    # Top aspects table
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**🌟 Strengths (Positive Aspects)**")
+                        positive_aspects = aspect_summary[aspect_summary['sentiment'] == 'positive'].nlargest(5, 'mentions')
+                        if not positive_aspects.empty:
+                            for _, row in positive_aspects.iterrows():
+                                st.success(f"**{row['aspect'].title()}**: {int(row['mentions'])} mentions ({row['confidence']:.1%} confidence)")
+                        else:
+                            st.info("No positive aspects detected")
+                    
+                    with col2:
+                        st.markdown("**⚠️ Areas for Improvement (Negative Aspects)**")
+                        negative_aspects = aspect_summary[aspect_summary['sentiment'] == 'negative'].nlargest(5, 'mentions')
+                        if not negative_aspects.empty:
+                            for _, row in negative_aspects.iterrows():
+                                st.error(f"**{row['aspect'].title()}**: {int(row['mentions'])} mentions ({row['confidence']:.1%} confidence)")
+                        else:
+                            st.info("No negative aspects detected")
+                else:
+                    st.info("No specific aspects detected in the reviews. Reviews may be too general or short.")
                 
                 # Show results table
                 st.subheader("📋 Detailed Results")
