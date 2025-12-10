@@ -32,13 +32,14 @@ def load_model():
     return tokenizer, model
 
 def analyze_text(text, tokenizer, model):
-    """Analyze sentiment of a single text"""
+    """Analyze sentiment of a single text with neutral detection"""
     if not text or len(text.strip()) < 3:
         return {
             "label": "neutral",
             "confidence": 0.5,
-            "positive_score": 0.5,
-            "negative_score": 0.5
+            "positive_score": 0.33,
+            "negative_score": 0.33,
+            "neutral_score": 0.34
         }
     
     # Tokenize and predict
@@ -51,14 +52,27 @@ def analyze_text(text, tokenizer, model):
     negative_score = predictions[0][0].item()
     positive_score = predictions[0][1].item()
     
-    label = "positive" if positive_score > negative_score else "negative"
-    confidence = max(positive_score, negative_score)
+    # Calculate neutral zone - if scores are close, classify as neutral
+    score_diff = abs(positive_score - negative_score)
+    neutral_threshold = 0.15  # If difference < 15%, it's neutral
+    
+    if score_diff < neutral_threshold:
+        # Scores are too close - neutral sentiment
+        neutral_score = 1.0 - score_diff
+        label = "neutral"
+        confidence = neutral_score
+    else:
+        # Clear positive or negative
+        label = "positive" if positive_score > negative_score else "negative"
+        confidence = max(positive_score, negative_score)
+        neutral_score = 1.0 - confidence
     
     return {
         "label": label,
         "confidence": confidence,
         "positive_score": positive_score,
-        "negative_score": negative_score
+        "negative_score": negative_score,
+        "neutral_score": neutral_score
     }
 
 def main():
@@ -101,7 +115,7 @@ def main():
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    emoji = "😊" if result["label"] == "positive" else "😞"
+                    emoji = "😊" if result["label"] == "positive" else ("😐" if result["label"] == "neutral" else "😞")
                     st.metric("Sentiment", f"{emoji} {result['label'].title()}")
                 
                 with col2:
@@ -113,13 +127,18 @@ def main():
                 # Probability bars
                 st.subheader("📊 Detailed Scores")
                 
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
                 with col1:
                     st.markdown("**😊 Positive**")
                     st.progress(result['positive_score'])
                     st.write(f"{result['positive_score']:.1%}")
                 
                 with col2:
+                    st.markdown("**😐 Neutral**")
+                    st.progress(result['neutral_score'])
+                    st.write(f"{result['neutral_score']:.1%}")
+                
+                with col3:
                     st.markdown("**😞 Negative**")
                     st.progress(result['negative_score'])
                     st.write(f"{result['negative_score']:.1%}")
@@ -187,9 +206,10 @@ def main():
                 # Summary statistics
                 st.header("📈 Analysis Summary")
                 
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4, col5 = st.columns(5)
                 
                 positive_count = (results_df['sentiment'] == 'positive').sum()
+                neutral_count = (results_df['sentiment'] == 'neutral').sum()
                 negative_count = (results_df['sentiment'] == 'negative').sum()
                 avg_confidence = results_df['confidence'].mean()
                 
@@ -198,8 +218,10 @@ def main():
                 with col2:
                     st.metric("😊 Positive", f"{positive_count} ({positive_count/total*100:.1f}%)")
                 with col3:
-                    st.metric("😞 Negative", f"{negative_count} ({negative_count/total*100:.1f}%)")
+                    st.metric("😐 Neutral", f"{neutral_count} ({neutral_count/total*100:.1f}%)")
                 with col4:
+                    st.metric("😞 Negative", f"{negative_count} ({negative_count/total*100:.1f}%)")
+                with col5:
                     st.metric("Avg Confidence", f"{avg_confidence:.1%}")
                 
                 # Visualizations
@@ -215,7 +237,11 @@ def main():
                         names=sentiment_counts.index,
                         title="Sentiment Distribution",
                         color=sentiment_counts.index,
-                        color_discrete_map={'positive': '#4CAF50', 'negative': '#F44336'}
+                        color_discrete_map={
+                            'positive': '#4CAF50', 
+                            'neutral': '#9E9E9E',
+                            'negative': '#F44336'
+                        }
                     )
                     st.plotly_chart(fig_pie, use_container_width=True)
                 
@@ -237,8 +263,8 @@ def main():
                 # Add filters
                 filter_sentiment = st.multiselect(
                     "Filter by sentiment:",
-                    ['positive', 'negative'],
-                    default=['positive', 'negative']
+                    ['positive', 'neutral', 'negative'],
+                    default=['positive', 'neutral', 'negative']
                 )
                 
                 filtered_df = results_df[results_df['sentiment'].isin(filter_sentiment)]
