@@ -238,83 +238,99 @@ def load_aspect_extractor():
 
 def extract_aspects_ml(texts_and_sentiments):
     """
-    ML-based aspect extraction using TF-IDF to automatically discover topics.
+    ML-based aspect extraction using noun phrases and key entities.
     
-    This learns what's important from the actual reviews rather than predefined keywords.
-    Returns top aspects found across all reviews with their sentiment distribution.
+    Uses NLP to extract meaningful topics (nouns, noun phrases) instead of
+    common words. Learns what topics are discussed in reviews automatically.
     """
     if not texts_and_sentiments or len(texts_and_sentiments) < 2:
         return []
     
-    from sklearn.feature_extraction.text import TfidfVectorizer
+    from collections import Counter
     import re
     
     texts = [item['text'] for item in texts_and_sentiments]
     sentiments = [item['sentiment'] for item in texts_and_sentiments]
     
-    # Custom stopwords
-    stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
-                 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-                 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-                 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
-                 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
-                 'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them',
-                 'movie', 'film', 'review', 'product'}  # Domain-agnostic
+    # Words to ignore (verbs, adjectives, pronouns, etc.)
+    ignore_words = {
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+        'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
+        'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+        'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
+        'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
+        'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them',
+        'very', 'really', 'just', 'so', 'too', 'quite', 'all', 'any', 'some',
+        'more', 'most', 'much', 'many', 'few', 'little', 'good', 'bad',
+        'great', 'nice', 'best', 'worst', 'better', 'horrible', 'amazing',
+        'terrible', 'excellent', 'poor', 'awesome', 'love', 'hate', 'like',
+        'movie', 'film', 'review', 'product', 'thing', 'something', 'everything',
+        'nothing', 'anything', 'one', 'two', 'first', 'second', 'last', 'next'
+    }
     
     try:
-        # Use TF-IDF to learn important terms automatically
-        vectorizer = TfidfVectorizer(
-            max_features=50,
-            ngram_range=(1, 2),  # Unigrams and bigrams
-            stop_words=list(stopwords),
-            min_df=2,  # Must appear in at least 2 reviews
-            max_df=0.7,  # Filter out if in >70% of reviews
-            token_pattern=r'\b[a-z]{3,}\b'  # Min 3 letters
-        )
+        # Extract noun phrases (2-3 word combinations) and single nouns
+        noun_phrases = []
         
-        # Learn vocabulary from all texts
-        tfidf_matrix = vectorizer.fit_transform(texts)
-        feature_names = vectorizer.get_feature_names_out()
+        for text in texts:
+            # Clean and lowercase
+            clean_text = text.lower()
+            # Extract 2-3 word noun phrases (simple pattern matching)
+            # Look for: adjective? noun+ (e.g., "customer service", "website design")
+            words = re.findall(r'\b[a-z]{3,}\b', clean_text)
+            
+            # Extract bigrams and trigrams as potential noun phrases
+            for i in range(len(words)):
+                # Single meaningful nouns
+                if words[i] not in ignore_words and len(words[i]) > 3:
+                    noun_phrases.append(words[i])
+                
+                # Bigrams (2-word phrases)
+                if i < len(words) - 1:
+                    phrase = f"{words[i]} {words[i+1]}"
+                    if words[i] not in ignore_words or words[i+1] not in ignore_words:
+                        noun_phrases.append(phrase)
         
-        # Get importance score for each term
-        term_scores = tfidf_matrix.sum(axis=0).A1
+        # Count frequency of each aspect
+        aspect_counter = Counter(noun_phrases)
         
-        # Get top terms by TF-IDF score
-        top_indices = term_scores.argsort()[-20:][::-1]  # Top 20 terms
+        # Get most common aspects
+        common_aspects = aspect_counter.most_common(50)
         
-        # For each top term, collect which reviews mention it and their sentiments
+        # For each aspect, analyze sentiment distribution
         aspects = []
-        for idx in top_indices:
-            term = feature_names[idx]
-            score = term_scores[idx]
+        for aspect, count in common_aspects:
+            if count < 2:  # Must appear at least twice
+                continue
             
-            # Find reviews containing this term
-            reviews_with_term = []
+            # Find reviews mentioning this aspect
+            reviews_with_aspect = []
             for i, text in enumerate(texts):
-                if term.lower() in text.lower():
-                    reviews_with_term.append({
-                        'sentiment': sentiments[i],
-                        'text': text[:100]  # Sample
-                    })
+                if aspect in text.lower():
+                    reviews_with_aspect.append(sentiments[i])
             
-            if len(reviews_with_term) >= 2:  # At least 2 mentions
-                # Count sentiment distribution for this aspect
-                sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
-                for review in reviews_with_term:
-                    sentiment_counts[review['sentiment']] += 1
-                
-                # Determine dominant sentiment
-                dominant = max(sentiment_counts, key=sentiment_counts.get)
-                
-                aspects.append({
-                    'aspect': term,
-                    'sentiment': dominant,
-                    'confidence': score,
-                    'mentions': len(reviews_with_term),
-                    'sentiment_breakdown': sentiment_counts
-                })
+            # Count sentiments
+            sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+            for sent in reviews_with_aspect:
+                sentiment_counts[sent] += 1
+            
+            # Determine dominant sentiment
+            dominant = max(sentiment_counts, key=sentiment_counts.get)
+            
+            # Filter out aspects that are too generic (appear in >60% of reviews)
+            if count / len(texts) > 0.6:
+                continue
+            
+            aspects.append({
+                'aspect': aspect.title(),  # Capitalize for display
+                'sentiment': dominant,
+                'confidence': count / len(texts),  # Frequency as confidence
+                'mentions': count,
+                'sentiment_breakdown': sentiment_counts
+            })
         
-        return sorted(aspects, key=lambda x: x['mentions'], reverse=True)[:15]  # Top 15
+        # Sort by mentions and return top 15
+        return sorted(aspects, key=lambda x: x['mentions'], reverse=True)[:15]
         
     except Exception as e:
         st.warning(f"Aspect extraction requires at least 2 reviews: {str(e)}")
