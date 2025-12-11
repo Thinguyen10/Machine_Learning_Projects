@@ -195,6 +195,30 @@ def analyze_text(text, tokenizer, model):
     predicted_class = torch.argmax(probabilities).item()
     class_info = CLASS_LABELS[predicted_class]
     
+    # Domain adaptation: Adjust for business reviews (more subtle than movie reviews)
+    # Look for business-specific sentiment indicators
+    text_lower = text.lower()
+    
+    # Positive business indicators
+    positive_words = ['helpful', 'professional', 'easy', 'fast', 'clear', 'confident', 
+                      'appreciate', 'excellent', 'organized', 'stress-free', 'quick']
+    # Negative business indicators  
+    negative_words = ['frustrating', 'confused', 'vague', 'inconsistent', 'multiple times',
+                      'had to call', 'issues', 'problems', 'difficult', 'unclear']
+    
+    pos_count = sum(1 for word in positive_words if word in text_lower)
+    neg_count = sum(1 for word in negative_words if word in text_lower)
+    
+    # If we detected strong sentiment words but model predicted neutral class (2-4),
+    # adjust the final label
+    if predicted_class in [2, 3, 4]:  # Neutral classes
+        if pos_count >= 2 and neg_count == 0:
+            # Strong positive indicators → shift to positive
+            class_info = {'scale': 1, 'label': 'positive', 'name': 'Slightly Positive'}
+        elif neg_count >= 2 and pos_count == 0:
+            # Strong negative indicators → shift to negative
+            class_info = {'scale': -1, 'label': 'negative', 'name': 'Slightly Negative'}
+    
     # Aggregate scores for display (negative/neutral/positive)
     negative_score = probabilities[0:2].sum().item()  # Classes 0-1 (-3, -2)
     neutral_score = probabilities[2:5].sum().item()   # Classes 2-4 (-1, 0, +1)
