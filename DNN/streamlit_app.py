@@ -154,11 +154,43 @@ CLASS_LABELS = {
 @st.cache_resource
 def load_model():
     """Load model from HuggingFace (cached for performance)"""
+    import time
+    max_retries = 3
+    retry_delay = 5  # seconds
+    
     with st.spinner("🔄 Loading AI model from HuggingFace..."):
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-        model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
-        model.eval()
-    return tokenizer, model
+        for attempt in range(max_retries):
+            try:
+                tokenizer = AutoTokenizer.from_pretrained(
+                    MODEL_ID,
+                    resume_download=True,
+                    force_download=False
+                )
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    MODEL_ID,
+                    resume_download=True,
+                    force_download=False
+                )
+                model.eval()
+                return tokenizer, model
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    st.warning(f"⚠️ Connection issue (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                else:
+                    st.error(f"""
+                    ❌ **Failed to load model from HuggingFace Hub**
+                    
+                    This is usually a temporary connection issue. Please try:
+                    1. Refresh the page in a few minutes
+                    2. Check HuggingFace status: https://status.huggingface.co
+                    
+                    Error: {str(e)[:200]}
+                    """)
+                    raise
+    
+    # Should never reach here
+    raise RuntimeError("Failed to load model after all retries")
 
 def analyze_text(text, tokenizer, model):
     """
