@@ -265,7 +265,10 @@ def extract_aspects_ml(texts_and_sentiments):
         'great', 'nice', 'best', 'worst', 'better', 'horrible', 'amazing',
         'terrible', 'excellent', 'poor', 'awesome', 'love', 'hate', 'like',
         'movie', 'film', 'review', 'product', 'thing', 'something', 'everything',
-        'nothing', 'anything', 'one', 'two', 'first', 'second', 'last', 'next'
+        'nothing', 'anything', 'one', 'two', 'first', 'second', 'last', 'next',
+        'than', 'then', 'when', 'where', 'what', 'who', 'which', 'how', 'why',
+        'there', 'here', 'also', 'well', 'out', 'up', 'down', 'over', 'under',
+        'into', 'through', 'about', 'after', 'before', 'above', 'below'
     }
     
     try:
@@ -281,14 +284,16 @@ def extract_aspects_ml(texts_and_sentiments):
             
             # Extract bigrams and trigrams as potential noun phrases
             for i in range(len(words)):
-                # Single meaningful nouns
+                # Single meaningful nouns (not in stopwords)
                 if words[i] not in ignore_words and len(words[i]) > 3:
                     noun_phrases.append(words[i])
                 
-                # Bigrams (2-word phrases)
+                # Bigrams (2-word phrases) - BOTH words must not be stopwords
                 if i < len(words) - 1:
-                    phrase = f"{words[i]} {words[i+1]}"
-                    if words[i] not in ignore_words or words[i+1] not in ignore_words:
+                    word1, word2 = words[i], words[i+1]
+                    # Skip if either word is a stopword
+                    if word1 not in ignore_words and word2 not in ignore_words:
+                        phrase = f"{word1} {word2}"
                         noun_phrases.append(phrase)
         
         # Count frequency of each aspect
