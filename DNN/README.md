@@ -21,7 +21,8 @@ This project implements a complete sentiment analysis pipeline from data preproc
 **Core ML Implementation:**
 - Fine-tuned DistilBERT transformer for 7-class sentiment (-3 to +3 scale)
 - Multi-class classification with automatic label conversion from binary IMDB dataset
-- TF-IDF-based aspect extraction for automatic topic discovery
+- Domain adaptation layer for business/professional reviews with sentiment lexicon
+- Noun phrase extraction for automatic topic discovery (no manual keywords)
 - Softmax probability distribution for confidence scoring
 
 **Production Deployment:**
@@ -29,6 +30,7 @@ This project implements a complete sentiment analysis pipeline from data preproc
 - Model hosted on HuggingFace Hub for cloud access
 - Interactive visualizations with Plotly charts
 - Real-time progress tracking and downloadable results
+- Cross-domain support (movie reviews, business reviews, insurance, etc.)
 
 **Training Infrastructure:**
 - PyTorch-based training pipeline with gradient clipping
@@ -53,18 +55,25 @@ This project implements a complete sentiment analysis pipeline from data preproc
 **Deployment:** Loaded from HuggingFace Hub: `Thi144/sentiment-distilbert-7class`  
 **Classes:** Very Negative (-3), Negative (-2), Slightly Negative (-1), Neutral (0), Slightly Positive (+1), Positive (+2), Very Positive (+3)
 
-### 2. **Softmax Probability Distribution**
+### 2. **Domain Adaptation Layer**
+
+**Task:** Adjust model predictions for business/professional reviews  
+**How it works:** Keyword detection for domain-specific sentiment indicators (e.g., "helpful", "frustrating")  
+**Use:** Corrects neutral predictions when strong business sentiment signals are present  
+**Algorithm:** Rule-based post-processing with sentiment lexicon matching
+
+### 3. **Noun Phrase Extraction**
+
+**Task:** Automatic aspect/topic discovery from reviews  
+**Algorithm:** N-gram extraction with stopword filtering  
+**How it works:** Extracts meaningful 1-2 word noun phrases (e.g., "customer service", "pricing plan")  
+**Use:** Identifies business topics without manual keyword lists
+
+### 4. **Softmax Probability Distribution**
 
 **Task:** Convert model logits to probabilities  
 **How it works:** Takes raw scores and normalizes to [0,1] range that sums to 1.0  
 **Use:** Powers the confidence scores and probability displays
-
-### 3. **TF-IDF (Term Frequency-Inverse Document Frequency)**
-
-**Task:** Automatic aspect/topic discovery from reviews  
-**Algorithm:** Statistical NLP technique to identify important words  
-**How it works:** Words frequent in few documents but rare overall = important topics  
-**Use:** Replaces manual keyword lists with learned topics
 
 ---
 
@@ -197,8 +206,9 @@ python model_training/model_c/upload_7class_model.py
 | Algorithm | Type | Use Case |
 |-----------|------|----------|
 | DistilBERT 7-Class | Deep Learning (Transformer) | Primary sentiment classification |
+| Domain Adaptation | Rule-based ML | Business review sentiment adjustment |
+| Noun Phrase Extraction | NLP/ML | Automatic topic discovery |
 | Softmax | Neural Network | Probability distribution |
-| TF-IDF | Traditional ML | Aspect/topic extraction |
 
 ---
 
