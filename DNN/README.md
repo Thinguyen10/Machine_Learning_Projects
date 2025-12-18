@@ -131,6 +131,19 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
+Optional: use an isolated virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run streamlit_dashboard.py
+```
+
+Notes:
+- Default main file is `streamlit_app.py`; if you have `streamlit_dashboard.py`, replace the filename in the command.
+- The app loads the model from the HuggingFace Hub when online; use a token or local model files for offline runs.
+
 **Access:** http://localhost:8501
 
 ---
