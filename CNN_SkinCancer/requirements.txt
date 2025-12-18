@@ -1,7 +1,9 @@
-tensorflow
-keras
+torch
+torchvision
 numpy
 matplotlib
 streamlit
 scikit-learn
 kagglehub
+Pillow
+pandas
