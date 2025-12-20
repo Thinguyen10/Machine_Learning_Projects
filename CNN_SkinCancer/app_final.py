@@ -151,6 +151,259 @@ def load_model():
 
 
 @st.cache_data
+def get_sample_images():
+    """Get sample images from the dataset"""
+    try:
+        path = kagglehub.dataset_download("jaiahuja/skin-cancer-detection")
+        data_dir = Path(path)
+        
+        # Find test folder
+        test_folder = None
+        for child in data_dir.rglob('*'):
+            if child.is_dir() and child.name.lower() == 'test':
+                test_folder = child
+                break
+        
+        if not test_folder:
+            return {}
+        
+        # Get one sample from each class
+        samples = {}
+        IMAGE_EXTS = {'.jpg', '.jpeg', '.png'}
+        
+        for label_dir in sorted(test_folder.iterdir()):
+            if not label_dir.is_dir():
+                continue
+            label = label_dir.name
+            for img_file in label_dir.rglob('*'):
+                if img_file.suffix.lower() in IMAGE_EXTS:
+                    samples[label] = str(img_file.resolve())
+                    break
+        
+        return samples
+    except:
+        return {}
+
+
+def show_dataset_page():
+    """Front page explaining the dataset"""
+    st.markdown("<h1 style='text-align: center; color: white;'>🔬 Skin Cancer Detection Dataset</h1>", 
+                unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    This application uses dermoscopic images to detect and classify skin cancer lesions.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Dataset info
+    st.markdown("<h2 style='color: white; text-align: center;'>📊 Dataset Information</h2>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3 style='color: #0a1929;'>Total Images</h3>
+            <h1 style='color: #0a1929;'>2,357</h1>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3 style='color: #0a1929;'>Training Set</h3>
+            <h1 style='color: #0a1929;'>2,239</h1>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3 style='color: #0a1929;'>Test Set</h3>
+            <h1 style='color: #0a1929;'>118</h1>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Disease categories
+    st.markdown("<h2 style='color: white; text-align: center;'>🦠 9 Disease Categories</h2>", unsafe_allow_html=True)
+    
+    diseases = [
+        ("Actinic Keratosis", "Precancerous scaly patches caused by sun damage"),
+        ("Basal Cell Carcinoma", "Most common type of skin cancer"),
+        ("Dermatofibroma", "Benign fibrous nodule in the skin"),
+        ("Melanoma", "Most dangerous form of skin cancer"),
+        ("Nevus", "Common mole (benign)"),
+        ("Pigmented Benign Keratosis", "Non-cancerous brown skin growth"),
+        ("Seborrheic Keratosis", "Benign wart-like growth"),
+        ("Squamous Cell Carcinoma", "Second most common skin cancer"),
+        ("Vascular Lesion", "Blood vessel abnormality")
+    ]
+    
+    col1, col2 = st.columns(2)
+    for i, (disease, desc) in enumerate(diseases):
+        with col1 if i % 2 == 0 else col2:
+            st.markdown(f"""
+            <div style='background-color: rgba(251, 191, 36, 0.15); padding: 20px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #fbbf24;'>
+                <h3 style='color: #fbbf24; margin: 0;'>{i+1}. {disease}</h3>
+                <p style='color: white; margin: 10px 0 0 0; font-size: 22px;'>{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Sample images
+    st.markdown("<h2 style='color: white; text-align: center;'>🖼️ Sample Images from Dataset</h2>", unsafe_allow_html=True)
+    
+    with st.spinner("Loading sample images..."):
+        samples = get_sample_images()
+    
+    if samples:
+        # Display 3 samples per row
+        classes = list(samples.keys())
+        for i in range(0, len(classes), 3):
+            cols = st.columns(3)
+            for j, col in enumerate(cols):
+                if i + j < len(classes):
+                    class_name = classes[i + j]
+                    with col:
+                        img = Image.open(samples[class_name])
+                        st.image(img, caption=class_name, width='stretch')
+    
+    st.markdown("---")
+    
+    # Data source credit
+    st.markdown("""
+    <div style='background-color: rgba(251, 191, 36, 0.1); padding: 25px; border-radius: 10px; border: 2px solid #fbbf24;'>
+        <h3 style='color: #fbbf24; text-align: center;'>📚 Data Source</h3>
+        <p style='color: white; font-size: 22px; text-align: center;'>
+            Dataset: <strong>Skin Cancer Detection</strong><br>
+            Source: <strong>Kaggle</strong> - jaiahuja/skin-cancer-detection<br>
+            <a href='https://www.kaggle.com/datasets/jaiahuja/skin-cancer-detection' target='_blank' style='color: #fbbf24;'>View Dataset on Kaggle</a>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Educational disclaimer
+    st.warning("""
+    ⚠️ **Educational Disclaimer**: This is a practice project developed from concepts learned in class 
+    and is NOT intended for professional medical use. This application is for educational and 
+    demonstration purposes only. Always consult qualified healthcare professionals for proper medical diagnosis 
+    and treatment. Do not use this tool as a substitute for professional medical advice.
+    """)
+    
+    st.markdown("---")
+    
+    # Navigation
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("📚 Learn About CNN Algorithm →", key="go_cnn"):
+            st.session_state.page = "cnn"
+            st.rerun()
+
+
+def show_cnn_page():
+    """Page explaining CNN algorithm"""
+    st.markdown("<h1 style='text-align: center; color: white;'>🧠 Convolutional Neural Network (CNN)</h1>", 
+                unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    Understanding how our AI model identifies skin cancer
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # What is CNN
+    st.markdown("<h2 style='color: white;'>🔍 What is a CNN?</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='font-size: 24px; color: white; line-height: 1.8;'>
+    A <strong>Convolutional Neural Network (CNN)</strong> is a type of artificial intelligence specifically designed 
+    to analyze images. Think of it as teaching a computer to "see" and recognize patterns, just like a doctor 
+    learns to identify skin conditions by looking at thousands of examples.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # How it works
+    st.markdown("<h2 style='color: white;'>⚙️ How Does It Work?</h2>", unsafe_allow_html=True)
+    
+    steps = [
+        ("📥 Input Layer", "The image (64x64 pixels) enters the network"),
+        ("🔲 Convolutional Layers", "Detects edges, textures, and patterns (like color variations, borders, shapes)"),
+        ("📉 Pooling Layers", "Reduces image size while keeping important features"),
+        ("🔄 Multiple Layers", "Combines simple patterns into complex features (3 blocks with 32, 64, 128 filters)"),
+        ("🧮 Fully Connected Layer", "Analyzes all features together"),
+        ("🎯 Output Layer", "Predicts which of 9 diseases is most likely")
+    ]
+    
+    for i, (title, desc) in enumerate(steps, 1):
+        st.markdown(f"""
+        <div style='background-color: rgba(251, 191, 36, 0.15); padding: 25px; border-radius: 10px; margin: 15px 0; border-left: 5px solid #fbbf24;'>
+            <h3 style='color: #fbbf24; margin: 0;'>Step {i}: {title}</h3>
+            <p style='color: white; margin: 10px 0 0 0; font-size: 24px;'>{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Model specs
+    st.markdown("<h2 style='color: white;'>🎓 Our Model Specifications</h2>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3 style='color: #0a1929;'>Total Parameters</h3>
+            <h2 style='color: #0a1929;'>1,143,113</h2>
+            <p style='color: #0a1929; font-size: 20px;'>Learnable weights</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div class='metric-card'>
+            <h3 style='color: #0a1929;'>Training Epochs</h3>
+            <h2 style='color: #0a1929;'>80</h2>
+            <p style='color: #0a1929; font-size: 20px;'>Learning iterations</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='font-size: 24px; color: white; line-height: 1.8; margin-top: 30px;'>
+    <strong>Framework:</strong> PyTorch<br>
+    <strong>Optimizer:</strong> Adam (learning rate: 0.001)<br>
+    <strong>Loss Function:</strong> Cross Entropy Loss<br>
+    <strong>Batch Size:</strong> 32 images per training step
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Educational disclaimer
+    st.info("""
+    📖 **Educational Project**: This CNN model was developed from concepts learned in class to practice 
+    deep learning and medical image classification. This is a learning exercise and not a professional diagnostic tool.
+    """)
+    
+    st.markdown("---")
+    
+    # Navigation
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("← 🔬 Back to Dataset", key="back_dataset"):
+            st.session_state.page = "home"
+            st.rerun()
+    with col3:
+        if st.button("🎲 Start Testing →", key="go_test"):
+            st.session_state.page = "testing"
+            st.rerun()
+
+
 def download_and_find_dataset():
     """Download dataset and find test images"""
     try:
@@ -282,8 +535,16 @@ def plot_confusion_matrix(true_labels, predicted_labels, class_labels):
 
 def show_random_test_page():
     """Page for testing individual random images"""
-    st.markdown("<h1 style='text-align: center; color: white;'>🎲 Random Image Test</h1>", 
+    st.markdown("<h1 style='text-align: center; color: white;'>🎲 Test Random Images</h1>", 
                 unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    See how the AI predicts skin diseases on real test images
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
     
     # Load model
     with st.spinner("Loading model and dataset..."):
@@ -301,10 +562,11 @@ def show_random_test_page():
         st.error("Failed to load test data.")
         return
     
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Single Image Prediction Section
-    st.markdown("<h2 style='font-size: 32px;'>🎲 Random Image Test</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: white; text-align: center;'>Click to Generate Random Test</h2>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
@@ -335,7 +597,7 @@ def show_random_test_page():
         col1, col2 = st.columns([1, 1])
         
         with col1:
-            st.image(original_image, use_container_width=True)
+            st.image(original_image, width='stretch')
         
         with col2:
             # True label
@@ -370,11 +632,17 @@ def show_random_test_page():
     
     st.markdown("---")
     
+    # Educational note
+    st.info("""
+    📖 **Note**: This is an educational project demonstrating AI/ML concepts learned in class. 
+    Results are for learning purposes only and should not be used for medical decisions.
+    """)
+    
     # Navigation buttons
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("🏠 Back to Home", key="back_home_test"):
-            st.session_state.page = "home"
+        if st.button("← 📚 CNN Info", key="back_cnn"):
+            st.session_state.page = "cnn"
             st.rerun()
     with col3:
         if st.button("📊 Full Analysis →", key="go_analysis"):
@@ -384,8 +652,14 @@ def show_random_test_page():
 
 def show_analysis_page():
     """Page for full model analysis with confusion matrix"""
-    st.markdown("<h1 style='text-align: center; color: white;'>📊 Full Model Analysis</h1>", 
+    st.markdown("<h1 style='text-align: center; color: white;'>📊 Model Performance Analysis</h1>", 
                 unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    Comprehensive accuracy metrics and confusion matrix
+    </div>
+    """, unsafe_allow_html=True)
     
     # Load model
     with st.spinner("Loading model and dataset..."):
@@ -478,7 +752,7 @@ def show_analysis_page():
         with st.expander("📋 View Detailed Metrics by Class"):
             st.dataframe(
                 class_report,
-                use_container_width=True,
+                width='stretch',
                 height=400
             )
         
@@ -507,16 +781,32 @@ def show_analysis_page():
             </div>
             """, unsafe_allow_html=True)
     
+    # Educational disclaimer and credits
+    st.markdown("---")
+    
+    st.markdown("""
+    <div style='background-color: rgba(251, 191, 36, 0.1); padding: 20px; border-radius: 10px; text-align: center;'>
+        <h4 style='color: #fbbf24;'>📚 Project Information</h4>
+        <p style='color: white; font-size: 20px;'>
+            <strong>Project Type:</strong> Educational (Machine Learning/AI)<br>
+            <strong>Purpose:</strong> Demonstration of CNN concepts learned in class<br>
+            <strong>Data Source:</strong> Kaggle - Skin Cancer Detection Dataset by jaiahuja<br>
+            <strong>Framework:</strong> PyTorch<br><br>
+            <em>⚠️ This is a practice project and NOT for professional medical use.</em>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Navigation buttons
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("🏠 Back to Home", key="back_home_analysis"):
-            st.session_state.page = "home"
+        if st.button("← 🎲 Back to Testing", key="back_test"):
+            st.session_state.page = "testing"
             st.rerun()
     with col2:
-        if st.button("← 🎲 Random Test", key="back_test"):
-            st.session_state.page = "testing"
+        if st.button("🏠 Back to Home", key="back_home_analysis"):
+            st.session_state.page = "home"
             st.rerun()
 
 
@@ -529,16 +819,10 @@ def main():
     
     # Page routing
     if st.session_state.page == "home":
-        show_front_page()
-        
-        # Navigation button at the bottom
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            if st.button("🚀 Start Testing", key="go_testing"):
-                st.session_state.page = "testing"
-                st.rerun()
+        show_dataset_page()
+    
+    elif st.session_state.page == "cnn":
+        show_cnn_page()
     
     elif st.session_state.page == "testing":
         show_random_test_page()
