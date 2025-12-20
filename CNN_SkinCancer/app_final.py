@@ -81,6 +81,9 @@ st.markdown("""
         color: #0a1929;
         border-radius: 12px;
         border: none;
+        white-space: nowrap;
+        padding: 0 40px;
+        min-width: fit-content;
     }
     .stButton>button:hover {
         background-color: #f59e0b;
@@ -314,7 +317,7 @@ def show_dataset_page():
     st.markdown("---")
     
     # Navigation
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1.2, 2, 1])
     with col2:
         if st.button("📚 Learn About CNN Algorithm →", key="go_cnn"):
             st.session_state.page = "cnn"
@@ -409,7 +412,7 @@ def show_cnn_page():
     st.markdown("---")
     
     # Navigation
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([1, 3, 1.5])
     with col1:
         if st.button("← 🔬 Back to Dataset", key="back_dataset"):
             st.session_state.page = "home"
@@ -651,7 +654,7 @@ def show_random_test_page():
     """)
     
     # Navigation buttons
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([1, 3, 1.5])
     with col1:
         if st.button("← 📚 CNN Info", key="back_cnn"):
             st.session_state.page = "cnn"
@@ -811,7 +814,7 @@ def show_analysis_page():
     
     # Navigation buttons
     st.markdown("---")
-    col1, col2, col3 = st.columns([1, 4, 1])
+    col1, col2, col3 = st.columns([1, 3, 1.5])
     with col1:
         if st.button("← 🎲 Back to Testing", key="back_test"):
             st.session_state.page = "testing"
