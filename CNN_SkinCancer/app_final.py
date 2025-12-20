@@ -581,19 +581,15 @@ def show_random_test_page():
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Single Image Prediction Section
-    st.markdown("<h2 style='color: white; text-align: center;'>Click to Generate Random Test</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: white;'>Click to Generate Random Test</h2>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        if st.button("🎲 Generate Random Test", key="generate_test"):
-            # Select random test image
-            random_sample = random.choice(test_data)
-            
-            # Store in session state
-            st.session_state.current_sample = random_sample
-    
+    if st.button("🎲 Generate Random Test", key="generate_test"):
+        # Select random test image
+        random_sample = random.choice(test_data)
+        
+        # Store in session state
+        st.session_state.current_sample = random_sample
     # Display prediction if we have a current sample
     if 'current_sample' in st.session_state:
         sample = st.session_state.current_sample
