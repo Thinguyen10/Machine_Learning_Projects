@@ -816,7 +816,7 @@ def show_analysis_page():
         if st.button("← 🎲 Back to Testing", key="back_test"):
             st.session_state.page = "testing"
             st.rerun()
-    with col2:
+    with col3:
         if st.button("🏠 Back to Home", key="back_home_analysis"):
             st.session_state.page = "home"
             st.rerun()
