@@ -811,7 +811,7 @@ def show_analysis_page():
     
     # Navigation buttons
     st.markdown("---")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns([1, 4, 1])
     with col1:
         if st.button("← 🎲 Back to Testing", key="back_test"):
             st.session_state.page = "testing"
