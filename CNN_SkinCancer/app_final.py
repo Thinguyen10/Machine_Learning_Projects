@@ -128,8 +128,25 @@ st.markdown("""
 def load_model():
     """Load the pre-trained PyTorch model"""
     try:
-        with open('trained_model_70epochs.pkl', 'rb') as f:
-            model_data = pickle.load(f)
+        # Try different possible paths for the model file
+        model_paths = [
+            'trained_model_70epochs.pkl',
+            Path('trained_model_70epochs.pkl'),
+            Path(__file__).parent / 'trained_model_70epochs.pkl',
+            Path('/mount/src/cst-435/CNN_SkinCancer/trained_model_70epochs.pkl')
+        ]
+        
+        model_data = None
+        for path in model_paths:
+            try:
+                with open(path, 'rb') as f:
+                    model_data = pickle.load(f)
+                break
+            except (FileNotFoundError, OSError):
+                continue
+        
+        if model_data is None:
+            raise FileNotFoundError("Model file not found in any expected location")
         
         num_classes = model_data['num_classes']
         class_labels = model_data['class_labels']
