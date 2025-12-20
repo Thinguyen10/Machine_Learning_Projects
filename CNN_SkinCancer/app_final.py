@@ -16,7 +16,6 @@ import random
 
 # Import local modules
 from model_pytorch import SkinCancerCNN
-from streamlit_frontpage import show_front_page
 
 # Page configuration
 st.set_page_config(
