@@ -137,7 +137,7 @@ Optional: use an isolated virtual environment:
 python -m venv .venv
 source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-streamlit run streamlit_dashboard.py
+streamlit run streamlit_app.py
 ```
 
 Notes:
