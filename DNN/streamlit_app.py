@@ -300,183 +300,174 @@ def extract_aspects_ml(texts_and_sentiments):
     common words. Learns what topics are discussed in reviews automatically.
     """
     if not texts_and_sentiments or len(texts_and_sentiments) < 2:
-        return []
-    
-    from collections import Counter
-    import re
-    
-    texts = [item['text'] for item in texts_and_sentiments]
-    sentiments = [item['sentiment'] for item in texts_and_sentiments]
-    
-    # Words to ignore (verbs, adjectives, pronouns, etc.)
-    ignore_words = {
-        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
-        'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-        'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-        'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these',
-        'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your',
-        'his', 'her', 'its', 'our', 'their', 'me', 'him', 'us', 'them',
-        'very', 'really', 'just', 'so', 'too', 'quite', 'all', 'any', 'some',
-        'more', 'most', 'much', 'many', 'few', 'little', 'good', 'bad',
-        'great', 'nice', 'best', 'worst', 'better', 'horrible', 'amazing',
-        'terrible', 'excellent', 'poor', 'awesome', 'love', 'hate', 'like',
-        'movie', 'film', 'review', 'product', 'thing', 'something', 'everything',
-        'nothing', 'anything', 'one', 'two', 'first', 'second', 'last', 'next',
-        'than', 'then', 'when', 'where', 'what', 'who', 'which', 'how', 'why',
-        'there', 'here', 'also', 'well', 'out', 'up', 'down', 'over', 'under',
-        'into', 'through', 'about', 'after', 'before', 'above', 'below'
-    }
-    
-    try:
-        # Extract noun phrases (2-3 word combinations) and single nouns
-        noun_phrases = []
-        
-        for text in texts:
-            # Clean and lowercase
-            clean_text = text.lower()
-            # Extract 2-3 word noun phrases (simple pattern matching)
-            # Look for: adjective? noun+ (e.g., "customer service", "website design")
-            words = re.findall(r'\b[a-z]{3,}\b', clean_text)
-            
-            # Extract bigrams and trigrams as potential noun phrases
-            for i in range(len(words)):
-                # Single meaningful nouns (not in stopwords)
-                if words[i] not in ignore_words and len(words[i]) > 3:
-                    noun_phrases.append(words[i])
-                
-                # Bigrams (2-word phrases) - BOTH words must not be stopwords
-                if i < len(words) - 1:
-                    word1, word2 = words[i], words[i+1]
-                    # Skip if either word is a stopword
-                    if word1 not in ignore_words and word2 not in ignore_words:
-                        phrase = f"{word1} {word2}"
-                        noun_phrases.append(phrase)
-        
-        # Count frequency of each aspect
-        aspect_counter = Counter(noun_phrases)
-        
-        # Get most common aspects
-        common_aspects = aspect_counter.most_common(50)
-        
-        # For each aspect, analyze sentiment distribution
-        aspects = []
-        for aspect, count in common_aspects:
-            if count < 2:  # Must appear at least twice
-                continue
-            
-            # Find reviews mentioning this aspect
-            reviews_with_aspect = []
-            for i, text in enumerate(texts):
-                if aspect in text.lower():
-                    reviews_with_aspect.append(sentiments[i])
-            
-            # Count sentiments
-            sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
-            for sent in reviews_with_aspect:
-                sentiment_counts[sent] += 1
-            
-            # Determine dominant sentiment
-            dominant = max(sentiment_counts, key=sentiment_counts.get)
-            
-            # Filter out aspects that are too generic (appear in >60% of reviews)
-            if count / len(texts) > 0.6:
-                continue
-            
-            aspects.append({
-                'aspect': aspect.title(),  # Capitalize for display
-                'sentiment': dominant,
-                'confidence': count / len(texts),  # Frequency as confidence
-                'mentions': count,
-                'sentiment_breakdown': sentiment_counts
-            })
-        
-        # Sort by mentions and return top 15
-        return sorted(aspects, key=lambda x: x['mentions'], reverse=True)[:15]
-        
-    except Exception as e:
-        st.warning(f"Aspect extraction requires at least 2 reviews: {str(e)}")
-        return []
+        from collections import Counter
+        try:
+            import spacy
+        except Exception:
+            st.warning("spaCy is not installed. Install spaCy and the en_core_web_sm model for better extraction.")
+            return []
 
+        try:
+            # load small English model; fall back to blank English if model not available
+            try:
+                nlp = spacy.load("en_core_web_sm")
+            except Exception:
+                nlp = spacy.blank("en")
+
+            texts = [item.get('text', '') for item in texts_and_sentiments]
+            sentiments = [item.get('sentiment', 'neutral') for item in texts_and_sentiments]
+
+            noun_phrases = []
+            for text in texts:
+                doc = nlp(text)
+                # noun chunks (multi-word noun phrases)
+                for chunk in doc.noun_chunks:
+                    phrase = " ".join([tok.lemma_.lower() for tok in chunk if tok.is_alpha and not tok.is_stop])
+                    if phrase:
+                        noun_phrases.append(phrase)
+                # single nouns/proper nouns
+                for token in doc:
+                    if token.pos_ in ("NOUN", "PROPN") and token.is_alpha and not token.is_stop and len(token.lemma_) > 2:
+                        noun_phrases.append(token.lemma_.lower())
+
+            aspect_counter = Counter(noun_phrases)
+            common_aspects = aspect_counter.most_common(50)
+            aspects = []
+            for aspect, count in common_aspects:
+                if count < 2:
+                    continue
+                reviews_with_aspect = []
+                for i, text in enumerate(texts):
+                    if aspect in text.lower():
+                        reviews_with_aspect.append(sentiments[i])
+                sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+                for sent in reviews_with_aspect:
+                    sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
+                dominant = max(sentiment_counts, key=sentiment_counts.get)
+                if count / max(1, len(texts)) > 0.6:
+                    continue
+                aspects.append({
+                    'aspect': aspect.title(),
+                    'sentiment': dominant,
+                    'confidence': count / max(1, len(texts)),
+                    'mentions': count,
+                    'sentiment_breakdown': sentiment_counts
+                })
+
+            # Deduplicate similar aspects using embeddings and cosine similarity
+            if len(aspects) > 1:
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    from sklearn.metrics.pairwise import cosine_similarity
+                    model = SentenceTransformer('all-MiniLM-L6-v2')
+                    aspect_names = [a['aspect'] for a in aspects]
+                    embeddings = model.encode(aspect_names)
+                    sim_matrix = cosine_similarity(embeddings)
+                    merged = [False] * len(aspects)
+                    deduped_aspects = []
+                    for i, asp in enumerate(aspects):
+                        if merged[i]:
+                            continue
+                        group = [i]
+                        for j in range(i + 1, len(aspects)):
+                            if not merged[j] and sim_matrix[i, j] > 0.82:
+                                group.append(j)
+                                merged[j] = True
+                        if len(group) == 1:
+                            deduped_aspects.append(asp)
+                        else:
+                            rep_idx = max(group, key=lambda idx: aspects[idx]['mentions'])
+                            rep = aspects[rep_idx].copy()
+                            rep['mentions'] = sum(aspects[idx]['mentions'] for idx in group)
+                            rep['sentiment_breakdown'] = {
+                                k: sum(aspects[idx]['sentiment_breakdown'].get(k, 0) for idx in group)
+                                for k in ['positive', 'neutral', 'negative']
+                            }
+                            rep['confidence'] = rep['mentions'] / max(1, len(texts))
+                            deduped_aspects.append(rep)
+                    aspects = deduped_aspects
+                except Exception:
+                    # if sentence-transformers not available, skip dedup step
+                    pass
+
+            return sorted(aspects, key=lambda x: x['mentions'], reverse=True)[:15]
+        except Exception as e:
+            st.warning(f"Aspect extraction failed: {str(e)}")
+            return []
 def main():
-    # Header
-    st.title("🤖 AI Sentiment Analysis Dashboard")
-    st.markdown("**Powered by DistilBERT Transformer Model**")
-    
-    # Sidebar
-    with st.sidebar:
-        st.header("📊 Analysis Options")
-        analysis_mode = st.radio(
-            "Choose Mode:",
-            ["Single Text Analysis", "Batch CSV Upload"]
-        )
-        
-        st.markdown("---")
-        st.markdown("### 🔬 Model Info")
-        st.info(f"**Model:** {MODEL_ID}\n\n**Accuracy:** ~94%")
-    
+    st.header("📊 Analysis Options")
+    analysis_mode = st.radio(
+        "Choose Mode:",
+        ["Single Text Analysis", "Batch CSV Upload"]
+    )
+
+    st.markdown("---")
+    st.markdown("### 🔬 Model Info")
+    st.info(f"**Model:** {MODEL_ID}\n\n**Accuracy:** ~94%")
+
     # Load model
     tokenizer, model = load_model()
     st.success("✅ Model loaded and ready!")
-    
+
     if analysis_mode == "Single Text Analysis":
         # Single text analysis
         st.header("📝 Analyze Single Text")
-        
+
         text_input = st.text_area(
             "Enter text to analyze:",
             placeholder="Type or paste your review, comment, or feedback here...",
             height=150
         )
-        
+
         if st.button("🚀 Analyze Sentiment", type="primary"):
             if text_input:
                 with st.spinner("Analyzing..."):
                     result = analyze_text(text_input, tokenizer, model)
-                
+
                 # Display results
                 col1, col2, col3 = st.columns(3)
-                
+
                 with col1:
                     emoji = "😊" if result["label"] == "positive" else ("😐" if result["label"] == "neutral" else "😞")
                     st.metric("Sentiment", f"{emoji} {result['class_name']}")
-                
+
                 with col2:
                     st.metric("Confidence", f"{result['confidence']:.1%}")
-                
+
                 with col3:
                     st.metric("Scale", f"{result['scale']:+d}/3")
-                
+
                 # Probability bars
                 st.subheader("📊 Detailed Scores")
-                
+
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.markdown("**😊 Positive**")
                     st.progress(result['positive_score'])
                     st.write(f"{result['positive_score']:.1%}")
-                
+
                 with col2:
                     st.markdown("**😐 Neutral**")
                     st.progress(result['neutral_score'])
                     st.write(f"{result['neutral_score']:.1%}")
-                
+
                 with col3:
                     st.markdown("**😞 Negative**")
                     st.progress(result['negative_score'])
                     st.write(f"{result['negative_score']:.1%}")
             else:
                 st.warning("⚠️ Please enter some text to analyze")
-    
+
     else:
         # Batch CSV upload
         st.header("📊 Batch Analysis from CSV")
-        
+
         uploaded_file = st.file_uploader(
             "Upload your CSV file",
             type=['csv'],
             help="Upload a CSV file containing reviews or text to analyze"
         )
-        
+
         if uploaded_file:
             # Load CSV
             df = pd.read_csv(uploaded_file)
