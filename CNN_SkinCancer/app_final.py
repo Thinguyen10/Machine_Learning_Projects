@@ -98,8 +98,9 @@ st.markdown("""
         border: 3px solid #e0e0e0;
         text-align: center;
     }
-    .metric-card h1, .metric-card h2, .metric-card h3, .metric-card h4, .metric-card p {
-        color: #1f2937 !important;
+    .metric-card h1, .metric-card h2, .metric-card h3, .metric-card h4, .metric-card p, .metric-card div, .metric-card span {
+        color: #0a1929 !important;
+        font-weight: bold !important;
     }
     
     /* Info/warning boxes */
@@ -618,8 +619,8 @@ def show_random_test_page():
             # True label
             st.markdown(f"""
             <div class='metric-card' style='background-color: #e3f2fd;'>
-                <h3>🎯 True Disease</h3>
-                <h2>{true_label}</h2>
+                <h3 style='color: #0a1929;'>🎯 True Disease</h3>
+                <h2 style='color: #0a1929;'>{true_label}</h2>
             </div>
             """, unsafe_allow_html=True)
             
@@ -724,8 +725,8 @@ def show_analysis_page():
         with col1:
             st.markdown(f"""
             <div class='metric-card'>
-                <h3>Total Test Images</h3>
-                <h1>{total}</h1>
+                <h3 style='color: #0a1929;'>Total Test Images</h3>
+                <h1 style='color: #0a1929;'>{total}</h1>
             </div>
             """, unsafe_allow_html=True)
         
@@ -740,8 +741,8 @@ def show_analysis_page():
         with col3:
             st.markdown(f"""
             <div class='metric-card' style='background-color: #bbdefb;'>
-                <h3>Overall Accuracy</h3>
-                <h1>{accuracy:.2f}%</h1>
+                <h3 style='color: #0a1929;'>Overall Accuracy</h3>
+                <h1 style='color: #0a1929;'>{accuracy:.2f}%</h1>
             </div>
             """, unsafe_allow_html=True)
         
