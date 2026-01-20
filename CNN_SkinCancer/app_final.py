@@ -288,7 +288,7 @@ def show_dataset_page():
                     class_name = classes[i + j]
                     with col:
                         img = Image.open(samples[class_name])
-                        st.image(img, caption=class_name, width='stretch')
+                        st.image(img, caption=class_name, use_container_width=True)
     
     st.markdown("---")
     
@@ -612,7 +612,7 @@ def show_random_test_page():
         col1, col2 = st.columns([1, 1])
         
         with col1:
-            st.image(original_image, width='stretch')
+            st.image(original_image, use_container_width=True)
         
         with col2:
             # True label
