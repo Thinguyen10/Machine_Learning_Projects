@@ -1,0 +1,89 @@
+# 📁 Project Structure
+
+```
+Diabetes_Prediction/
+│
+├── 📄 app.py                          # Main Streamlit application (home page)
+│
+├── 📂 src/                            # Core modules (modular components)
+│   ├── __init__.py                    # Package initialization
+│   ├── data_processing.py             # Data generation & preprocessing classes
+│   ├── models.py                      # ML model implementations
+│   └── visualizations.py              # Plotting & visualization functions
+│
+├── 📂 pages/                          # Streamlit multi-page app pages
+│   ├── 1_Diabetes_Prediction.py       # Diabetes status prediction page
+│   ├── 2_Risk_Assessment.py           # Risk grouping with K-Means
+│   ├── 3_Type_Classification.py       # Type 1 vs Type 2 classification
+│   └── 4_Model_Explanations.py        # Educational content about ML models
+│
+├── 📂 .streamlit/                     # Streamlit configuration
+│   └── config.toml                    # App settings & theme
+│
+├── 📄 requirements.txt                # Python dependencies
+├── 📄 .gitignore                      # Git ignore rules
+│
+├── 📄 README.md                       # Main documentation
+├── 📄 QUICKSTART.md                   # Quick start guide
+├── 📄 DEPLOYMENT.md                   # Deployment instructions
+├── 📄 PROJECT_SUMMARY.md              # Project overview & achievements
+└── 📄 PROJECT_STRUCTURE.txt           # This file
+```
+
+## 📊 Statistics
+
+- **Total Python Files**: 9 (.py files)
+- **Lines of Code**: ~3,000+
+- **Documentation Files**: 5
+- **ML Models Implemented**: 6
+- **Streamlit Pages**: 5 (including home)
+- **Visualization Types**: 10+
+
+## 🗂️ File Descriptions
+
+### Main Application
+- **app.py**: Entry point, home page with project overview and navigation
+
+### Core Modules (src/)
+- **data_processing.py**: 
+  - `DataGenerator`: Synthetic diabetes data generation
+  - `DataPreprocessor`: Data cleaning, encoding, feature selection
+  - Helper functions for data filtering
+
+- **models.py**:
+  - `NaiveBayesModel`: Gaussian Naive Bayes classifier
+  - `RandomForestModel`: Random Forest with hyperparameter tuning
+  - `LogisticRegressionModel`: Logistic regression with scaling
+  - `RiskClusterer`: K-Means for risk assessment
+  - `DiabetesTypeClassifier`: PCA + SVM for type classification
+
+- **visualizations.py**:
+  - Correlation matrices, Elbow curves, PCA variance plots
+  - Model comparison charts, Patient profile radars
+  - Distribution comparisons, Risk distributions
+
+### Application Pages
+- **1_Diabetes_Prediction.py**: Train/compare 3 ML models, make predictions
+- **2_Risk_Assessment.py**: Cluster non-diabetic patients, identify high-risk groups
+- **3_Type_Classification.py**: Apply PCA, classify Type 1 vs Type 2
+- **4_Model_Explanations.py**: Educational ML algorithm explanations
+
+### Configuration & Documentation
+- **.streamlit/config.toml**: Theme, server settings
+- **requirements.txt**: All Python dependencies
+- **.gitignore**: Files to exclude from git
+- **README.md**: Comprehensive project documentation
+- **QUICKSTART.md**: Fast setup guide
+- **DEPLOYMENT.md**: Deployment instructions (5 platforms)
+- **PROJECT_SUMMARY.md**: Project achievements & highlights
+
+## 🎯 Design Principles Applied
+
+✅ **DRY** (Don't Repeat Yourself)  
+✅ **SRP** (Single Responsibility Principle)  
+✅ **Modularity**: High cohesion, low coupling  
+✅ **Encapsulation**: Classes for related functionality  
+✅ **Documentation**: Comprehensive docstrings  
+✅ **Version Control**: Git-ready structure  
+
+**Built with software engineering best practices and production-ready standards.**
