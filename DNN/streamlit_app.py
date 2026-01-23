@@ -461,7 +461,8 @@ def main():
     else:
         # Batch CSV upload
         st.header("📊 Batch Analysis from CSV")
-
+        text_input = st.text_area(
+            "Upload a CSV file containing reviews or text to analyze:")
         uploaded_file = st.file_uploader(
             "Upload your CSV file",
             type=['csv'],
