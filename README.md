@@ -10,11 +10,11 @@ A collection of deep learning and machine learning projects with interactive Str
 
 | Project | Type | Streamlit App |
 |---------|------|---------------|
-| 🏀 [NBA Team Optimizer](ANN_NBA_players/) | ANN/MLP | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/ANN_NBA_players/main.py) |
-| 🩺 [Diabetes Prediction System](Diabetes_Prediction/) | ML Classification | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/Diabetes_Prediction/app.py) |
+| 🏀 [NBA Team Optimizer](ANN_NBA_players/) | ANN/MLP | https://ann-nba-topplayers-prediction.streamlit.app |
+| 🩺 [Diabetes Prediction System](Diabetes_Prediction/) | ML Classification | https://diabetes-patients-prediction.streamlit.app |
 | 🔬 [Perceptron Learning](Perceptron/) | Neural Network | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/Perceptron/main_app.py) |
-| 🧠 [Sentiment Analysis](DNN/) | Transformers/NLP | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/DNN/streamlit_app.py) |
-| 🔍 [CNN Skin Cancer](CNN_SkinCancer/) | Computer Vision | - |[Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/CNN_SkinCancer/app_final.py) |
+| 🧠 [Sentiment Analysis](DNN/) | Transformers/NLP | https://customer-reviews-sentiment-analysis.streamlit.app |
+| 🔍 [CNN Skin Cancer](CNN_SkinCancer/) | Computer Vision | - | https://cnn-skindiseases-detection.streamlit.app |
 | 💬 [NLP Full Stack](NLP_Improve/) | NLP/React | - | React
 | 🗣️ [NLP React App](NLP_react/) | NLP/React | - | React
 | 🔄 [RNN React App](RNN_react/) | RNN/React | - | React
