@@ -36,54 +36,53 @@ st.markdown("""
     /* Center content with max width */
     .block-container {
         max-width: 1200px;
-        padding-top: 3rem;
-        padding-bottom: 3rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
     
-    /* Much larger base font size */
+    /* Balanced font sizes */
     .stMarkdown {
-        font-size: 24px !important;
+        font-size: 1rem !important;
     }
     
-    /* Headers - much bigger */
+    /* Headers - balanced sizes */
     h1 {
-        font-size: 64px !important;
+        font-size: 2.5rem !important;
         color: white !important;
         font-weight: bold !important;
     }
     h2 {
-        font-size: 48px !important;
+        font-size: 2rem !important;
         color: white !important;
         font-weight: bold !important;
     }
     h3 {
-        font-size: 32px !important;
+        font-size: 1.5rem !important;
         color: white !important;
     }
     h4 {
-        font-size: 26px !important;
+        font-size: 1.25rem !important;
         color: white !important;
     }
     
-    /* All text white and bigger */
+    /* Standard text styling */
     p, li, span, div {
-        font-size: 24px !important;
+        font-size: 1rem !important;
         color: white !important;
     }
     
-    /* Buttons - huge and visible */
+    /* Buttons - standard size */
     .stButton>button {
         width: 100%;
-        height: 80px;
-        font-size: 32px;
+        height: auto;
+        font-size: 1rem;
         font-weight: bold;
         background-color: #fbbf24;
         color: #0a1929;
-        border-radius: 12px;
+        border-radius: 8px;
         border: none;
-        white-space: nowrap;
-        padding: 0 40px;
-        min-width: fit-content;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
     }
     .stButton>button:hover {
         background-color: #f59e0b;
@@ -92,10 +91,10 @@ st.markdown("""
     
     /* Metric cards */
     .metric-card {
-        padding: 25px;
+        padding: 1.5rem;
         border-radius: 10px;
         background-color: #ffffff;
-        border: 3px solid #e0e0e0;
+        border: 2px solid #e0e0e0;
         text-align: center;
     }
     .metric-card h1, .metric-card h2, .metric-card h3, .metric-card h4, .metric-card p, .metric-card div, .metric-card span {
@@ -105,19 +104,20 @@ st.markdown("""
     
     /* Info/warning boxes */
     .stAlert {
-        font-size: 22px !important;
+        font-size: 1rem !important;
         background-color: rgba(251, 191, 36, 0.1);
         border: 2px solid #fbbf24;
     }
     .stAlert p {
-        font-size: 22px !important;
+        font-size: 1rem !important;
     }
     
     /* Expander */
     .streamlit-expanderHeader {
-        font-size: 24px !important;
+        font-size: 1.1rem !important;
         color: white !important;
         background-color: rgba(251, 191, 36, 0.2);
+        padding: 0.75rem;
     }
     
     /* Spinner */
@@ -211,7 +211,7 @@ def show_dataset_page():
                 unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
     This application uses dermoscopic images to detect and classify skin cancer lesions.
     </div>
     """, unsafe_allow_html=True)
@@ -267,7 +267,7 @@ def show_dataset_page():
             st.markdown(f"""
             <div style='background-color: rgba(251, 191, 36, 0.15); padding: 20px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #fbbf24;'>
                 <h3 style='color: #fbbf24; margin: 0;'>{i+1}. {disease}</h3>
-                <p style='color: white; margin: 10px 0 0 0; font-size: 22px;'>{desc}</p>
+                <p style='color: white; margin: 10px 0 0 0; font-size: 1rem;'>{desc}</p>
             </div>
             """, unsafe_allow_html=True)
     
@@ -297,7 +297,7 @@ def show_dataset_page():
     st.markdown("""
     <div style='background-color: rgba(251, 191, 36, 0.1); padding: 25px; border-radius: 10px; border: 2px solid #fbbf24;'>
         <h3 style='color: #fbbf24; text-align: center;'>📚 Data Source</h3>
-        <p style='color: white; font-size: 22px; text-align: center;'>
+        <p style='color: white; font-size: 1rem; text-align: center;'>
             Dataset: <strong>Skin Cancer Detection</strong><br>
             Source: <strong>Kaggle</strong> - jaiahuja/skin-cancer-detection<br>
             <a href='https://www.kaggle.com/datasets/jaiahuja/skin-cancer-detection' target='_blank' style='color: #fbbf24;'>View Dataset on Kaggle</a>
@@ -341,7 +341,7 @@ def show_cnn_page():
     # What is CNN
     st.markdown("<h2 style='color: white;'>🔍 What is a CNN?</h2>", unsafe_allow_html=True)
     st.markdown("""
-    <div style='font-size: 24px; color: white; line-height: 1.8;'>
+    <div style='font-size: 1rem; color: white; line-height: 1.6;'>
     A <strong>Convolutional Neural Network (CNN)</strong> is a type of artificial intelligence specifically designed 
     to analyze images. Think of it as teaching a computer to "see" and recognize patterns, just like a doctor 
     learns to identify skin conditions by looking at thousands of examples.
@@ -366,7 +366,7 @@ def show_cnn_page():
         st.markdown(f"""
         <div style='background-color: rgba(251, 191, 36, 0.15); padding: 25px; border-radius: 10px; margin: 15px 0; border-left: 5px solid #fbbf24;'>
             <h3 style='color: #fbbf24; margin: 0;'>Step {i}: {title}</h3>
-            <p style='color: white; margin: 10px 0 0 0; font-size: 24px;'>{desc}</p>
+            <p style='color: white; margin: 10px 0 0 0; font-size: 1rem;'>{desc}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -381,7 +381,7 @@ def show_cnn_page():
         <div class='metric-card'>
             <h3 style='color: #0a1929;'>Total Parameters</h3>
             <h2 style='color: #0a1929;'>1,143,113</h2>
-            <p style='color: #0a1929; font-size: 20px;'>Learnable weights</p>
+            <p style='color: #0a1929; font-size: 1rem;'>Learnable weights</p>
         </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -389,12 +389,12 @@ def show_cnn_page():
         <div class='metric-card'>
             <h3 style='color: #0a1929;'>Training Epochs</h3>
             <h2 style='color: #0a1929;'>80</h2>
-            <p style='color: #0a1929; font-size: 20px;'>Learning iterations</p>
+            <p style='color: #0a1929; font-size: 1rem;'>Learning iterations</p>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='font-size: 24px; color: white; line-height: 1.8; margin-top: 30px;'>
+    <div style='font-size: 1rem; color: white; line-height: 1.6; margin-top: 2rem;'>
     <strong>Framework:</strong> PyTorch<br>
     <strong>Optimizer:</strong> Adam (learning rate: 0.001)<br>
     <strong>Loss Function:</strong> Cross Entropy Loss<br>
@@ -555,11 +555,11 @@ def plot_confusion_matrix(true_labels, predicted_labels, class_labels):
 
 def show_random_test_page():
     """Page for testing individual random images"""
-    st.markdown("<h1 style='text-align: center; color: white;'>🎲 Test Random Images</h1>", 
+    st.markdown("""<h1 style='text-align: center; color: white;'>🎲 Test Random Images</h1>""", 
                 unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
     See how the AI predicts skin diseases on real test images
     </div>
     """, unsafe_allow_html=True)
@@ -584,11 +584,8 @@ def show_random_test_page():
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Single Image Prediction Section
-    st.markdown("<h2 style='color: white;'>Click to Generate Random Test</h2>", unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🎲 Generate Random Test", key="generate_test"):
+    # Random test button
+    if st.button("🎲 Generate Random Test", key="generate_test", use_container_width=True):
         # Select random test image
         random_sample = random.choice(test_data)
         
@@ -672,7 +669,7 @@ def show_analysis_page():
                 unsafe_allow_html=True)
     
     st.markdown("""
-    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
+    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
     Comprehensive accuracy metrics and confusion matrix
     </div>
     """, unsafe_allow_html=True)
@@ -697,7 +694,8 @@ def show_analysis_page():
     
     st.markdown("<h2 style='color: white;'>Confusion Matrix & Performance Metrics</h2>", unsafe_allow_html=True)
     
-    if st.button("🔍 Analyze All Test Images", key="conf_matrix"):
+    # Automatically run evaluation if not already done
+    if 'true_labels' not in st.session_state:
         with st.spinner("🔄 Evaluating model on all test images... This may take a moment..."):
             true_labels, predicted_labels = evaluate_model(
                 model, test_data, class_labels, img_size, device
@@ -708,7 +706,7 @@ def show_analysis_page():
         st.session_state.predicted_labels = predicted_labels
         st.session_state.class_labels = class_labels
     
-    # Display confusion matrix if available
+    # Display confusion matrix
     if 'true_labels' in st.session_state:
         true_labels = st.session_state.true_labels
         predicted_labels = st.session_state.predicted_labels
