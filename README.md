@@ -12,7 +12,6 @@ A collection of deep learning and machine learning projects with interactive Str
 |---------|------|---------------|
 | 🏀 [NBA Team Optimizer](ANN_NBA_players/) | ANN/MLP | https://ann-nba-topplayers-prediction.streamlit.app |
 | 🩺 [Diabetes Prediction System](Diabetes_Prediction/) | ML Classification | https://diabetes-patients-prediction.streamlit.app |
-| 🔬 [Perceptron Learning](Perceptron/) | Neural Network | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/Perceptron/main_app.py) |
 | 🧠 [Sentiment Analysis](DNN/) | Transformers/NLP | https://customer-reviews-sentiment-analysis.streamlit.app |
 | 🔍 [CNN Skin Cancer](CNN_SkinCancer/) | Computer Vision | - | https://cnn-skindiseases-detection.streamlit.app |
 | 💬 [NLP Full Stack](NLP_Improve/) | NLP/React | - | React
