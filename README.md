@@ -14,10 +14,10 @@ A collection of deep learning and machine learning projects with interactive Str
 | 🩺 [Diabetes Prediction System](Diabetes_Prediction/) | ML Classification | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/Diabetes_Prediction/app.py) |
 | 🔬 [Perceptron Learning](Perceptron/) | Neural Network | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/Perceptron/main_app.py) |
 | 🧠 [Sentiment Analysis](DNN/) | Transformers/NLP | [Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/DNN/streamlit_app.py) |
-| 🔍 [CNN Skin Cancer](CNN_SkinCancer/) | Computer Vision | - |
-| 💬 [NLP Full Stack](NLP_Improve/) | NLP/React | - |
-| 🗣️ [NLP React App](NLP_react/) | NLP/React | - |
-| 🔄 [RNN React App](RNN_react/) | RNN/React | - |
+| 🔍 [CNN Skin Cancer](CNN_SkinCancer/) | Computer Vision | - |[Launch App](https://github.com/thinguyen/Deep_Learning_Projects/blob/main/CNN_SkinCancer/app_final.py) |
+| 💬 [NLP Full Stack](NLP_Improve/) | NLP/React | - | React
+| 🗣️ [NLP React App](NLP_react/) | NLP/React | - | React
+| 🔄 [RNN React App](RNN_react/) | RNN/React | - | React
 
 ---
 
