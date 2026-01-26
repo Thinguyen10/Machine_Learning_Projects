@@ -11,6 +11,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from datetime import datetime
 import io
+import os
 
 # Page config
 st.set_page_config(
@@ -161,16 +162,8 @@ def load_model():
     with st.spinner("🔄 Loading AI model from HuggingFace..."):
         for attempt in range(max_retries):
             try:
-                tokenizer = AutoTokenizer.from_pretrained(
-                    MODEL_ID,
-                    resume_download=True,
-                    force_download=False
-                )
-                model = AutoModelForSequenceClassification.from_pretrained(
-                    MODEL_ID,
-                    resume_download=True,
-                    force_download=False
-                )
+                tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+                model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
                 model.eval()
                 return tokenizer, model
             except Exception as e:
@@ -178,6 +171,18 @@ def load_model():
                     st.warning(f"⚠️ Connection issue (attempt {attempt + 1}/{max_retries}). Retrying in {retry_delay}s...")
                     time.sleep(retry_delay)
                 else:
+                    # Final attempt failed — try loading from a local path fallback
+                    local_path = "./outputs/transformer_7class"
+                    if os.path.isdir(local_path):
+                        try:
+                            st.info("Attempting to load model from local path instead.")
+                            tokenizer = AutoTokenizer.from_pretrained(local_path, local_files_only=True)
+                            model = AutoModelForSequenceClassification.from_pretrained(local_path, local_files_only=True)
+                            model.eval()
+                            return tokenizer, model
+                        except Exception as le:
+                            st.error(f"❌ Failed to load local model too. Error: {str(le)[:200]}")
+                            raise
                     st.error(f"""
                     ❌ **Failed to load model from HuggingFace Hub**
                     
