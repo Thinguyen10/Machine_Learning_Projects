@@ -40,35 +40,37 @@ st.markdown("""
         padding-bottom: 2rem;
     }
     
-    /* Balanced font sizes */
-    .stMarkdown {
-        font-size: 1rem !important;
-    }
-    
     /* Headers - balanced sizes */
     h1 {
-        font-size: 2.5rem !important;
-        color: white !important;
-        font-weight: bold !important;
+        font-size: 5rem;
+        color: white;
+        font-weight: bold;
+    }
+    .main-header {
+        font-size: 15rem;
+        color: white;
+        font-weight: bold;
+        margin-bottom: 2rem;
     }
     h2 {
-        font-size: 2rem !important;
-        color: white !important;
-        font-weight: bold !important;
+        font-size: 3.5rem;
+        color: white;
+        font-weight: bold;
     }
     h3 {
-        font-size: 1.5rem !important;
-        color: white !important;
+        font-size: 3rem;
+        color: white;
+        font-weight: bold;
     }
     h4 {
-        font-size: 1.25rem !important;
-        color: white !important;
+        font-size: 2.5rem;
+        color: white;
     }
     
     /* Standard text styling */
     p, li, span, div {
-        font-size: 1rem !important;
-        color: white !important;
+        font-size: 1.8rem;
+        color: white;
     }
     
     /* Buttons - standard size */
@@ -207,11 +209,11 @@ def get_sample_images():
 
 def show_dataset_page():
     """Front page explaining the dataset"""
-    st.markdown("<h1 style='text-align: center; color: white;'>🔬 Skin Cancer Detection Dataset</h1>", 
+    st.markdown("<h1 class='main-header' style='text-align: center; color: white; font-size: 15rem;'>🩺 Skin Cancer Detection CNN</h1>", 
                 unsafe_allow_html=True)
-    
+
     st.markdown("""
-    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
+    <div style='font-size: 1.5rem; color: white; line-height: 1.8; text-align: center; margin: 2rem 0;'>
     This application uses dermoscopic images to detect and classify skin cancer lesions.
     </div>
     """, unsafe_allow_html=True)
