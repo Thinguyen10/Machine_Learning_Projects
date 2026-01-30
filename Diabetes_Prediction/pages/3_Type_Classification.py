@@ -3,19 +3,47 @@ Diabetes Type Classification Page
 PCA + SVM for Type 1 vs Type 2 classification.
 """
 import streamlit as st
-import pandas as pd
-import numpy as np
 import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from data_processing import DataGenerator, DataPreprocessor, get_diabetic_data
-from models import DiabetesTypeClassifier
-from visualizations import plot_pca_variance, plot_patient_profile_radar
-
 st.set_page_config(page_title="Type Classification", page_icon="🔬", layout="wide")
+
+
+@st.cache_resource(show_spinner=False)
+def train_type_classifier(dataset_size, variance_threshold):
+    """Train type classifier with caching."""
+    import pandas as pd
+    from data_processing import DataGenerator, DataPreprocessor, get_diabetic_data
+    from models import DiabetesTypeClassifier
+    
+    # Generate data
+    generator = DataGenerator(n_samples=dataset_size)
+    df = generator.generate_data()
+    
+    # Preprocess
+    preprocessor = DataPreprocessor()
+    df_clean = preprocessor.clean_data(df.copy())
+    df_encoded = preprocessor.encode_features(df_clean)
+    
+    # Get diabetic patients only
+    diabetic_df = get_diabetic_data(df_encoded)
+    
+    # Prepare features (drop target)
+    X_diabetic = diabetic_df.drop(columns=['diabetes status'])
+    
+    # Apply PCA and train classifier
+    classifier = DiabetesTypeClassifier(variance_threshold=variance_threshold)
+    X_pca, cumulative_variance = classifier.apply_pca(X_diabetic)
+    cluster_centers = classifier.train(X_diabetic)
+    
+    # Make predictions on the entire diabetic dataset
+    diabetes_types = classifier.predict(X_diabetic)
+    diabetic_df['diabetes_type'] = diabetes_types
+    
+    return df, df_encoded, diabetic_df, X_diabetic, classifier, X_pca, cumulative_variance, cluster_centers, diabetes_types, preprocessor
 
 st.title("🔬 Diabetes Type Classification")
 st.markdown("""
@@ -62,41 +90,10 @@ with tab1:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            # Generate data
-            status_text.text("Generating dataset...")
-            generator = DataGenerator(n_samples=dataset_size)
-            df = generator.generate_data()
-            progress_bar.progress(15)
-            
-            # Preprocess
-            status_text.text("Preprocessing data...")
-            preprocessor = DataPreprocessor()
-            df_clean = preprocessor.clean_data(df.copy())
-            df_encoded = preprocessor.encode_features(df_clean)
-            progress_bar.progress(30)
-            
-            # Get diabetic patients only
-            status_text.text("Filtering diabetic patients...")
-            diabetic_df = get_diabetic_data(df_encoded)
-            
-            # Prepare features (drop target)
-            X_diabetic = diabetic_df.drop(columns=['diabetes status'])
-            progress_bar.progress(45)
-            
-            # Apply PCA and train classifier
-            status_text.text("Applying PCA for dimensionality reduction...")
-            classifier = DiabetesTypeClassifier(variance_threshold=variance_threshold)
-            X_pca, cumulative_variance = classifier.apply_pca(X_diabetic)
-            progress_bar.progress(65)
-            
-            status_text.text("Training SVM classifier...")
-            cluster_centers = classifier.train(X_diabetic)
-            progress_bar.progress(85)
-            
-            # Make predictions on the entire diabetic dataset
-            status_text.text("Classifying patients...")
-            diabetes_types = classifier.predict(X_diabetic)
-            diabetic_df['diabetes_type'] = diabetes_types
+            status_text.text("Training type classifier...")
+            df, df_encoded, diabetic_df, X_diabetic, classifier, X_pca, cumulative_variance, cluster_centers, diabetes_types, preprocessor = train_type_classifier(
+                dataset_size, variance_threshold
+            )
             progress_bar.progress(100)
             
             # Store results

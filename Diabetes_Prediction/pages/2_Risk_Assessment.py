@@ -3,23 +3,50 @@ Risk Assessment Page
 K-Means clustering for non-diabetic patient risk grouping.
 """
 import streamlit as st
-import pandas as pd
-import numpy as np
 import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from data_processing import DataGenerator, DataPreprocessor, get_non_diabetic_data
-from models import RiskClusterer
-from visualizations import (
-    plot_elbow_curve,
-    plot_risk_distribution,
-    plot_patient_profile_radar
-)
-
 st.set_page_config(page_title="Risk Assessment", page_icon="⚠️", layout="wide")
+
+
+@st.cache_data(show_spinner=False)
+def generate_and_cluster_risk_data(dataset_size):
+    """Generate data and perform risk clustering with caching."""
+    import pandas as pd
+    import numpy as np
+    from data_processing import DataGenerator, DataPreprocessor, get_non_diabetic_data
+    from models import RiskClusterer
+    
+    # Generate data
+    generator = DataGenerator(n_samples=dataset_size)
+    df = generator.generate_data()
+    
+    # Preprocess
+    preprocessor = DataPreprocessor()
+    df_clean = preprocessor.clean_data(df.copy())
+    df_encoded = preprocessor.encode_features(df_clean)
+    
+    # Get non-diabetic patients
+    non_diabetic_df = get_non_diabetic_data(df_encoded)
+    
+    # Get top features
+    top_features = preprocessor.get_top_features(df_encoded)
+    
+    # Prepare clustering data
+    X_cluster = non_diabetic_df[top_features].copy()
+    X_cluster = X_cluster.drop(columns=['diabetes status'], errors='ignore')
+    
+    # Find optimal K
+    clusterer = RiskClusterer()
+    optimal_k, sse_values = clusterer.find_optimal_k(X_cluster)
+    
+    # Perform clustering
+    clusters = clusterer.fit(X_cluster)
+    
+    return df, df_encoded, non_diabetic_df, X_cluster, clusterer, optimal_k, sse_values, clusters, top_features, preprocessor
 
 st.title("⚠️ Diabetes Risk Assessment")
 st.markdown("""
@@ -64,40 +91,9 @@ with tab1:
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            # Generate data
-            status_text.text("Generating dataset...")
-            generator = DataGenerator(n_samples=dataset_size)
-            df = generator.generate_data()
-            progress_bar.progress(20)
+            status_text.text("Performing risk assessment...")
+            df, df_encoded, non_diabetic_df, X_cluster, clusterer, optimal_k, sse_values, clusters, top_features, preprocessor = generate_and_cluster_risk_data(dataset_size)
             
-            # Preprocess
-            status_text.text("Preprocessing data...")
-            preprocessor = DataPreprocessor()
-            df_clean = preprocessor.clean_data(df.copy())
-            df_encoded = preprocessor.encode_features(df_clean)
-            progress_bar.progress(40)
-            
-            # Get non-diabetic patients
-            status_text.text("Filtering non-diabetic patients...")
-            non_diabetic_df = get_non_diabetic_data(df_encoded)
-            
-            # Get top features
-            top_features = preprocessor.get_top_features(df_encoded)
-            
-            # Prepare clustering data
-            X_cluster = non_diabetic_df[top_features].copy()
-            X_cluster = X_cluster.drop(columns=['diabetes status'], errors='ignore')
-            progress_bar.progress(60)
-            
-            # Find optimal K
-            status_text.text("Finding optimal number of clusters...")
-            clusterer = RiskClusterer()
-            optimal_k, sse_values = clusterer.find_optimal_k(X_cluster)
-            progress_bar.progress(80)
-            
-            # Perform clustering
-            status_text.text("Clustering patients...")
-            clusters = clusterer.fit(X_cluster)
             risk_labels = clusterer.predict_risk(X_cluster)
             progress_bar.progress(100)
             

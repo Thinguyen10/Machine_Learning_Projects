@@ -3,25 +3,66 @@ Diabetes Prediction Page
 Compare and use different ML models for diabetes prediction.
 """
 import streamlit as st
-import pandas as pd
-import numpy as np
 import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from data_processing import DataGenerator, DataPreprocessor
-from models import NaiveBayesModel, RandomForestModel, LogisticRegressionModel
-from visualizations import (
-    plot_correlation_matrix, 
-    plot_metrics_comparison, 
-    display_metrics_cards,
-    plot_patient_profile_radar,
-    plot_distribution_comparison
-)
-
 st.set_page_config(page_title="Diabetes Prediction", page_icon="🏥", layout="wide")
+
+
+# Cached data generation
+@st.cache_data(show_spinner=False)
+def generate_and_prepare_data(dataset_size, test_size):
+    """Generate and prepare data with caching."""
+    import pandas as pd
+    from data_processing import DataGenerator, DataPreprocessor
+    
+    generator = DataGenerator(n_samples=dataset_size)
+    df = generator.generate_data()
+    
+    preprocessor = DataPreprocessor()
+    X_train, X_test, y_train, y_test, top_features = preprocessor.prepare_data(
+        df, test_size=test_size
+    )
+    
+    df_processed = preprocessor.encode_features(preprocessor.clean_data(df.copy()))
+    
+    return df, df_processed, X_train, X_test, y_train, y_test, top_features, preprocessor
+
+
+# Cached model training
+@st.cache_resource(show_spinner=False)
+def train_all_models(_X_train, _y_train, _X_test, _y_test, tune_rf=False):
+    """Train all models with caching."""
+    from models import NaiveBayesModel, RandomForestModel, LogisticRegressionModel
+    
+    models_dict = {}
+    metrics_dict = {}
+    
+    # Naive Bayes
+    nb_model = NaiveBayesModel()
+    nb_model.train(_X_train, _y_train)
+    nb_metrics = nb_model.evaluate(_X_test, _y_test)
+    models_dict['Naive Bayes'] = nb_model
+    metrics_dict['Naive Bayes'] = nb_metrics
+    
+    # Random Forest
+    rf_model = RandomForestModel(tune_hyperparameters=tune_rf)
+    rf_model.train(_X_train, _y_train)
+    rf_metrics = rf_model.evaluate(_X_test, _y_test)
+    models_dict['Random Forest'] = rf_model
+    metrics_dict['Random Forest'] = rf_metrics
+    
+    # Logistic Regression
+    lr_model = LogisticRegressionModel()
+    lr_model.train(_X_train, _y_train)
+    lr_metrics = lr_model.evaluate(_X_test, _y_test)
+    models_dict['Logistic Regression'] = lr_model
+    metrics_dict['Logistic Regression'] = lr_metrics
+    
+    return models_dict, metrics_dict
 
 st.title("🏥 Diabetes Status Prediction")
 st.markdown("""
@@ -60,26 +101,19 @@ with tab1:
     if st.button("▶️ Start Training", type="primary", key="train_btn"):
         with st.spinner("Generating data and training models..."):
             
-            # Generate data
             progress_bar = st.progress(0)
             status_text = st.empty()
             
+            # Generate data (cached)
             status_text.text("Generating synthetic dataset...")
-            generator = DataGenerator(n_samples=dataset_size)
-            df = generator.generate_data()
-            progress_bar.progress(20)
-            
-            # Preprocess data
-            status_text.text("Preprocessing data...")
-            preprocessor = DataPreprocessor()
-            X_train, X_test, y_train, y_test, top_features = preprocessor.prepare_data(
-                df, test_size=test_size
+            df, df_processed, X_train, X_test, y_train, y_test, top_features, preprocessor = generate_and_prepare_data(
+                dataset_size, test_size
             )
             progress_bar.progress(40)
             
             # Store in session state
             st.session_state.df = df
-            st.session_state.df_processed = preprocessor.encode_features(preprocessor.clean_data(df.copy()))
+            st.session_state.df_processed = df_processed
             st.session_state.X_train = X_train
             st.session_state.X_test = X_test
             st.session_state.y_train = y_train
@@ -88,35 +122,11 @@ with tab1:
             st.session_state.preprocessor = preprocessor
             st.session_state.data_generated = True
             
-            # Train models
-            models_dict = {}
-            metrics_dict = {}
-            
-            # Naive Bayes
-            status_text.text("Training Naive Bayes...")
-            nb_model = NaiveBayesModel()
-            nb_model.train(X_train, y_train)
-            nb_metrics = nb_model.evaluate(X_test, y_test)
-            models_dict['Naive Bayes'] = nb_model
-            metrics_dict['Naive Bayes'] = nb_metrics
-            progress_bar.progress(60)
-            
-            # Random Forest
-            status_text.text("Training Random Forest...")
-            rf_model = RandomForestModel(tune_hyperparameters=tune_rf)
-            rf_model.train(X_train, y_train)
-            rf_metrics = rf_model.evaluate(X_test, y_test)
-            models_dict['Random Forest'] = rf_model
-            metrics_dict['Random Forest'] = rf_metrics
-            progress_bar.progress(80)
-            
-            # Logistic Regression
-            status_text.text("Training Logistic Regression...")
-            lr_model = LogisticRegressionModel()
-            lr_model.train(X_train, y_train)
-            lr_metrics = lr_model.evaluate(X_test, y_test)
-            models_dict['Logistic Regression'] = lr_model
-            metrics_dict['Logistic Regression'] = lr_metrics
+            # Train models (cached)
+            status_text.text("Training models...")
+            models_dict, metrics_dict = train_all_models(
+                X_train, y_train, X_test, y_test, tune_rf
+            )
             progress_bar.progress(100)
             
             # Store models
@@ -129,6 +139,9 @@ with tab1:
     
     # Display results
     if st.session_state.models_trained:
+        import pandas as pd
+        from visualizations import display_metrics_cards, plot_metrics_comparison
+        
         st.success("✅ All models trained successfully!")
         
         st.markdown("---")
@@ -183,6 +196,8 @@ with tab2:
             fatigue = st.selectbox("Fatigue", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
         
         if st.button("🔮 Predict", type="primary"):
+            import pandas as pd
+            
             # Create patient data
             patient_data = pd.DataFrame({
                 'glucose': [glucose],
