@@ -5,12 +5,37 @@ Compare and use different ML models for diabetes prediction.
 import streamlit as st
 import sys
 from pathlib import Path
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
+# Import visualization functions
+from visualizations import plot_correlation_matrix, plot_patient_profile_radar, plot_distribution_comparison
+
 st.set_page_config(page_title="Diabetes Prediction", page_icon="🏥", layout="wide")
 
+# Apply consistent styling from main app
+st.markdown("""
+    <style>
+    .main {
+        background-color: #34495e;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white;
+    }
+    .stMarkdown {
+        color: white;
+    }
+    p {
+        color: white;
+    }
+    label {
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # Cached data generation
 @st.cache_data(show_spinner=False)
@@ -86,10 +111,6 @@ with st.sidebar:
     
     tune_rf = st.checkbox("Tune Random Forest Hyperparameters", value=False,
                          help="Enable grid search for optimal parameters (slower)")
-    
-    if st.button("🔄 Generate Data & Train Models", type="primary"):
-        st.session_state.data_generated = False
-        st.session_state.models_trained = False
 
 # Main content
 tab1, tab2, tab3, tab4 = st.tabs(["📊 Model Training", "🔍 Make Predictions", "📈 Data Exploration", "🎯 Model Comparison"])
@@ -139,7 +160,6 @@ with tab1:
     
     # Display results
     if st.session_state.models_trained:
-        import pandas as pd
         from visualizations import display_metrics_cards, plot_metrics_comparison
         
         st.success("✅ All models trained successfully!")
@@ -175,39 +195,102 @@ with tab2:
     else:
         st.markdown("Enter patient information to predict diabetes status:")
         
+        # Get the features used during training
+        top_features = st.session_state.top_features
+        df = st.session_state.df
+        df_processed = st.session_state.df_processed
+        
+        # Create input form based on top features
+        st.info(f"📋 Using {len(top_features)} most important features: {', '.join(top_features)}")
+        
         col1, col2 = st.columns(2)
+        
+        # Collect input for each feature
+        patient_input = {}
         
         with col1:
             st.subheader("Patient Information")
             
-            # Get feature ranges from training data
-            df_processed = st.session_state.df_processed
-            
-            glucose = st.slider("Glucose Level (mg/dL)", 50, 250, 120)
-            insulin = st.slider("Insulin Level (μU/mL)", 0, 300, 100)
-            bmi = st.slider("BMI", 15.0, 50.0, 25.0, step=0.1)
-            bp = st.slider("Blood Pressure (mm Hg)", 40, 140, 80)
+            # Loop through first half of selected features to create input widgets
+            # Split features across two columns for better UI layout
+            for feature in top_features[:len(top_features)//2]:
+                # Create appropriate input widget based on feature type
+                if feature in ['glucose']:
+                    patient_input[feature] = st.slider("Glucose Level (mg/dL)", 50, 250, 120, key=feature)
+                elif feature in ['insulin']:
+                    patient_input[feature] = st.slider("Insulin Level (μU/mL)", 0, 300, 100, key=feature)
+                elif feature in ['bmi']:
+                    patient_input[feature] = st.slider("BMI", 15.0, 50.0, 25.0, step=0.1, key=feature)
+                elif feature in ['blood pressure']:
+                    patient_input[feature] = st.slider("Blood Pressure (mm Hg)", 40, 140, 80, key=feature)
+                elif feature in ['age']:
+                    patient_input[feature] = st.slider("Age", 18, 80, 45, key=feature)
+                elif feature in ['stress level']:
+                    patient_input[feature] = st.slider("Stress Level (1-10)", 1, 10, 5, key=feature)
+                elif feature in ['gender']:
+                    gender_input = st.selectbox("Gender", ["Male", "Female"], key=feature)
+                    patient_input[feature] = 1 if gender_input == "Male" else 0  # Encode
+                elif feature in ['physical activity level']:
+                    activity_input = st.selectbox("Physical Activity", ["Low", "Medium", "High"], key=feature)
+                    patient_input[feature] = {"Low": 0, "Medium": 1, "High": 2}[activity_input]
+                elif feature in ['family history']:
+                    history_input = st.selectbox("Family History", ["No", "Yes"], key=feature)
+                    patient_input[feature] = 1 if history_input == "Yes" else 0
+                elif feature in ['thirst']:
+                    patient_input[feature] = st.selectbox("Excessive Thirst", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                elif feature in ['frequent urination']:
+                    patient_input[feature] = st.selectbox("Frequent Urination", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                elif feature in ['fatigue']:
+                    patient_input[feature] = st.selectbox("Fatigue", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                else:
+                    # Default handler for any feature not explicitly handled above
+                    # Uses median value from training data as default to ensure realistic input
+                    if feature in df_processed.columns:
+                        median_val = df_processed[feature].median()
+                        patient_input[feature] = st.number_input(f"{feature.title()}", value=float(median_val), key=feature)
         
         with col2:
             st.subheader("Symptoms & History")
             
-            thirst = st.selectbox("Excessive Thirst", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
-            urination = st.selectbox("Frequent Urination", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
-            fatigue = st.selectbox("Fatigue", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes")
+            # Loop through second half of selected features
+            for feature in top_features[len(top_features)//2:]:
+                # Create appropriate input widget based on feature type
+                if feature in ['thirst']:
+                    patient_input[feature] = st.selectbox("Excessive Thirst", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                elif feature in ['frequent urination']:
+                    patient_input[feature] = st.selectbox("Frequent Urination", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                elif feature in ['fatigue']:
+                    patient_input[feature] = st.selectbox("Fatigue", [0, 1], format_func=lambda x: "No" if x == 0 else "Yes", key=feature)
+                elif feature in ['glucose']:
+                    patient_input[feature] = st.slider("Glucose Level (mg/dL)", 50, 250, 120, key=feature)
+                elif feature in ['insulin']:
+                    patient_input[feature] = st.slider("Insulin Level (μU/mL)", 0, 300, 100, key=feature)
+                elif feature in ['bmi']:
+                    patient_input[feature] = st.slider("BMI", 15.0, 50.0, 25.0, step=0.1, key=feature)
+                elif feature in ['blood pressure']:
+                    patient_input[feature] = st.slider("Blood Pressure (mm Hg)", 40, 140, 80, key=feature)
+                elif feature in ['age']:
+                    patient_input[feature] = st.slider("Age", 18, 80, 45, key=feature)
+                elif feature in ['stress level']:
+                    patient_input[feature] = st.slider("Stress Level (1-10)", 1, 10, 5, key=feature)
+                elif feature in ['gender']:
+                    gender_input = st.selectbox("Gender", ["Male", "Female"], key=feature)
+                    patient_input[feature] = 1 if gender_input == "Male" else 0
+                elif feature in ['physical activity level']:
+                    activity_input = st.selectbox("Physical Activity", ["Low", "Medium", "High"], key=feature)
+                    patient_input[feature] = {"Low": 0, "Medium": 1, "High": 2}[activity_input]
+                elif feature in ['family history']:
+                    history_input = st.selectbox("Family History", ["No", "Yes"], key=feature)
+                    patient_input[feature] = 1 if history_input == "Yes" else 0
+                else:
+                    # Default handler for any other feature - use median from training data
+                    if feature in df_processed.columns:
+                        median_val = df_processed[feature].median()
+                        patient_input[feature] = st.number_input(f"{feature.title()}", value=float(median_val), key=feature)
         
         if st.button("🔮 Predict", type="primary"):
-            import pandas as pd
-            
-            # Create patient data
-            patient_data = pd.DataFrame({
-                'glucose': [glucose],
-                'thirst': [thirst],
-                'insulin': [insulin],
-                'frequent urination': [urination],
-                'blood pressure': [bp],
-                'bmi': [bmi],
-                'fatigue': [fatigue]
-            })
+            # Create patient data with features in correct order
+            patient_data = pd.DataFrame([patient_input])[top_features]
             
             st.markdown("---")
             st.subheader("🩺 Prediction Results")
@@ -254,8 +337,11 @@ with tab2:
             # Visualize patient profile
             st.markdown("---")
             st.subheader("📊 Patient Health Profile")
-            patient_values = [glucose, thirst, insulin, urination, bp, bmi, fatigue]
-            feature_names = ['Glucose', 'Thirst', 'Insulin', 'Urination', 'BP', 'BMI', 'Fatigue']
+            
+            # Prepare values for radar chart (using actual patient input)
+            patient_values = list(patient_input.values())
+            feature_names = list(patient_input.keys())
+            
             fig = plot_patient_profile_radar(np.array(patient_values), feature_names)
             st.plotly_chart(fig, use_container_width=True)
 

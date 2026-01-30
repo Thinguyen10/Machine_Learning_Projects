@@ -5,21 +5,46 @@ K-Means clustering for non-diabetic patient risk grouping.
 import streamlit as st
 import sys
 from pathlib import Path
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
+# Import data processing and models
+from data_processing import DataGenerator, DataPreprocessor, get_non_diabetic_data
+from models import RiskClusterer
+
+# Import visualization functions
+from visualizations import plot_elbow_curve, plot_patient_profile_radar, plot_risk_distribution
+
 st.set_page_config(page_title="Risk Assessment", page_icon="⚠️", layout="wide")
+
+# Apply consistent styling from main app
+st.markdown("""
+    <style>
+    .main {
+        background-color: #34495e;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white;
+    }
+    .stMarkdown {
+        color: white;
+    }
+    p {
+        color: white;
+    }
+    label {
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
 @st.cache_data(show_spinner=False)
 def generate_and_cluster_risk_data(dataset_size):
     """Generate data and perform risk clustering with caching."""
-    import pandas as pd
-    import numpy as np
-    from data_processing import DataGenerator, DataPreprocessor, get_non_diabetic_data
-    from models import RiskClusterer
-    
     # Generate data
     generator = DataGenerator(n_samples=dataset_size)
     df = generator.generate_data()

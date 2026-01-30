@@ -6,6 +6,27 @@ import streamlit as st
 
 st.set_page_config(page_title="Model Explanations", page_icon="📚", layout="wide")
 
+# Apply consistent styling from main app
+st.markdown("""
+    <style>
+    .main {
+        background-color: #34495e;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white;
+    }
+    .stMarkdown {
+        color: white;
+    }
+    p {
+        color: white;
+    }
+    label {
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("📚 Machine Learning Models Explained")
 st.markdown("""
 Learn about the machine learning algorithms used in this diabetes prediction system. 

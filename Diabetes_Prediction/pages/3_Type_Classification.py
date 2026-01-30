@@ -5,20 +5,46 @@ PCA + SVM for Type 1 vs Type 2 classification.
 import streamlit as st
 import sys
 from pathlib import Path
+import numpy as np
+import pandas as pd
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
+# Import data processing and models
+from data_processing import DataGenerator, DataPreprocessor, get_diabetic_data
+from models import DiabetesTypeClassifier
+
+# Import visualization functions
+from visualizations import plot_elbow_curve, plot_patient_profile_radar, plot_risk_distribution, plot_pca_variance
+
 st.set_page_config(page_title="Type Classification", page_icon="🔬", layout="wide")
+
+# Apply consistent styling from main app
+st.markdown("""
+    <style>
+    .main {
+        background-color: #34495e;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white;
+    }
+    .stMarkdown {
+        color: white;
+    }
+    p {
+        color: white;
+    }
+    label {
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
 @st.cache_resource(show_spinner=False)
 def train_type_classifier(dataset_size, variance_threshold):
     """Train type classifier with caching."""
-    import pandas as pd
-    from data_processing import DataGenerator, DataPreprocessor, get_diabetic_data
-    from models import DiabetesTypeClassifier
-    
     # Generate data
     generator = DataGenerator(n_samples=dataset_size)
     df = generator.generate_data()
