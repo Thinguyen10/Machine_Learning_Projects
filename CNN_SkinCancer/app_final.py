@@ -35,55 +35,76 @@ st.markdown("""
     
     /* Center content with max width */
     .block-container {
-        max-width: 1200px;
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        max-width: 1400px;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
     }
     
-    /* Headers - balanced sizes */
-    h1 {
-        font-size: 5rem;
-        color: white;
+    /* Large prominent titles */
+    .big-title {
+        font-size: 4.5rem;
         font-weight: bold;
+        color: white;
+        text-align: left;
+        margin-bottom: 2rem;
+        line-height: 1.2;
     }
-    .main-header {
-        font-size: 15rem;
-        color: white;
+    
+    .section-title {
+        font-size: 2.5rem;
         font-weight: bold;
+        color: white;
+        margin-top: 3rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .description-text {
+        font-size: 1.3rem;
+        color: white;
+        line-height: 1.8;
         margin-bottom: 2rem;
     }
-    h2 {
-        font-size: 3.5rem;
-        color: white;
-        font-weight: bold;
-    }
-    h3 {
+    
+    /* Headers */
+    h1 {
         font-size: 3rem;
         color: white;
         font-weight: bold;
     }
-    h4 {
-        font-size: 2.5rem;
+    h2 {
+        font-size: 2.2rem;
         color: white;
+        font-weight: bold;
+        margin-top: 2rem;
     }
-    
-    /* Standard text styling */
-    p, li, span, div {
+    h3 {
         font-size: 1.8rem;
         color: white;
+        font-weight: bold;
+    }
+    h4 {
+        font-size: 1.4rem;
+        color: white;
     }
     
-    /* Buttons - standard size */
+    /* Standard text */
+    p, li, span, div {
+        font-size: 1.1rem;
+        color: white;
+        line-height: 1.6;
+    }
+    
+    /* Buttons */
     .stButton>button {
         width: 100%;
         height: auto;
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: bold;
         background-color: #fbbf24;
         color: #0a1929;
         border-radius: 8px;
         border: none;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem 1.5rem;
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
@@ -93,7 +114,7 @@ st.markdown("""
     
     /* Metric cards */
     .metric-card {
-        padding: 1.5rem;
+        padding: 2rem;
         border-radius: 10px;
         background-color: #ffffff;
         border: 2px solid #e0e0e0;
@@ -104,27 +125,28 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Info/warning boxes */
+    /* Info boxes */
+    .info-box {
+        background-color: rgba(251, 191, 36, 0.15);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border-left: 5px solid #fbbf24;
+    }
+    
+    /* Alerts */
     .stAlert {
         font-size: 1rem !important;
         background-color: rgba(251, 191, 36, 0.1);
         border: 2px solid #fbbf24;
     }
-    .stAlert p {
-        font-size: 1rem !important;
-    }
     
     /* Expander */
     .streamlit-expanderHeader {
-        font-size: 1.1rem !important;
+        font-size: 1.2rem !important;
         color: white !important;
         background-color: rgba(251, 191, 36, 0.2);
-        padding: 0.75rem;
-    }
-    
-    /* Spinner */
-    .stSpinner > div {
-        border-top-color: #fbbf24 !important;
+        padding: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -209,19 +231,24 @@ def get_sample_images():
 
 def show_dataset_page():
     """Front page explaining the dataset"""
-    st.markdown("<h1 class='main-header' style='text-align: center; color: white; font-size: 15rem;'>🩺 Skin Cancer Detection CNN</h1>", 
-                unsafe_allow_html=True)
-
+    # Large prominent title
     st.markdown("""
-    <div style='font-size: 1.5rem; color: white; line-height: 1.8; text-align: center; margin: 2rem 0;'>
-    This application uses dermoscopic images to detect and classify skin cancer lesions.
+    <div class='big-title'>
+        🩺 Skin Cancer Detection Dataset
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Description
+    st.markdown("""
+    <div class='description-text'>
+        This application uses dermoscopic images to detect and classify skin cancer lesions using a Convolutional Neural Network (CNN).
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Dataset info
-    st.markdown("<h2 style='color: white; text-align: center;'>📊 Dataset Information</h2>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Dataset Overview
+    st.markdown("<h2>📊 Dataset Information</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -329,16 +356,21 @@ def show_dataset_page():
 
 def show_cnn_page():
     """Page explaining CNN algorithm"""
-    st.markdown("<h1 style='text-align: center; color: white;'>🧠 Convolutional Neural Network (CNN)</h1>", 
-                unsafe_allow_html=True)
-    
+    # Large prominent title
     st.markdown("""
-    <div style='font-size: 26px; color: white; line-height: 1.8; text-align: center; margin: 30px 0;'>
-    Understanding how our AI model identifies skin cancer
+    <div class='big-title'>
+        🧠 Convolutional Neural Network (CNN)
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Description
+    st.markdown("""
+    <div class='description-text'>
+        Understanding how our AI model identifies skin cancer through deep learning.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # What is CNN
     st.markdown("<h2 style='color: white;'>🔍 What is a CNN?</h2>", unsafe_allow_html=True)
@@ -557,16 +589,21 @@ def plot_confusion_matrix(true_labels, predicted_labels, class_labels):
 
 def show_random_test_page():
     """Page for testing individual random images"""
-    st.markdown("""<h1 style='text-align: center; color: white;'>🎲 Test Random Images</h1>""", 
-                unsafe_allow_html=True)
-    
+    # Large prominent title
     st.markdown("""
-    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
-    See how the AI predicts skin diseases on real test images
+    <div class='big-title'>
+        🎲 Test Random Images
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Description
+    st.markdown("""
+    <div class='description-text'>
+        See how the AI predicts skin diseases on real test images from the dataset.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Load model
     with st.spinner("Loading model and dataset..."):
@@ -667,14 +704,21 @@ def show_random_test_page():
 
 def show_analysis_page():
     """Page for full model analysis with confusion matrix"""
-    st.markdown("<h1 style='text-align: center; color: white;'>📊 Model Performance Analysis</h1>", 
-                unsafe_allow_html=True)
-    
+    # Large prominent title
     st.markdown("""
-    <div style='font-size: 1.1rem; color: white; line-height: 1.6; text-align: center; margin: 2rem 0;'>
-    Comprehensive accuracy metrics and confusion matrix
+    <div class='big-title'>
+        📊 Model Performance Analysis
     </div>
     """, unsafe_allow_html=True)
+    
+    # Description
+    st.markdown("""
+    <div class='description-text'>
+        Comprehensive accuracy metrics and confusion matrix showing model performance across all disease categories.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
     
     # Load model
     with st.spinner("Loading model and dataset..."):
